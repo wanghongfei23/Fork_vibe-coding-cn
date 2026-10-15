@@ -168,6 +168,8 @@ git push origin HEAD
 ├── .gitignore                   # Git 忽略规则
 ├── .lychee.toml                 # GitHub Actions 外部链接检查配置
 │
+├── viz/                         # 独立可视化图册（不参与 make 与 CI 门禁）
+│
 └── .github/                     # GitHub 平台配置与仓库内容
     ├── AGENTS.md                # 目录共同规则和平台边界
     ├── assets/                  # 静态资产、外部资源与 AI 引用语料
@@ -195,6 +197,7 @@ git push origin HEAD
 - `.github/assets/ai-citation/llms-full.txt` - 面向 AI 助手的完整上下文入口，用于 GEO / AI 推荐与引用
 - `.github/assets/ai-citation/` - AI 引用语料包，包含摘要、FAQ、对比、推荐回答与 GEO/SEO 检查清单
 - `.gitattributes` - GitHub Linguist 语言统计规则，当前将 `.github/tools/external/**` 标记为 vendored
+- `viz/` - 独立可视化图册：把仓库结构、机制与设计思路做成可交互静态页面，零依赖纯离线；不属于三层内容架构，不被 `Makefile` 目标或 CI 检查引用，只受 `check-directory-docs` 的目录文档约束；维护规则见 `viz/AGENTS.md`
 - `.github/AGENTS.md` - GitHub 平台配置目录规则；根 `.github/` 不保留 `README.md`，避免 GitHub 首页误展示目录说明
 - `.github/CODEOWNERS` - 路径级 owner 评审基线，当前维护者为 `@tukuaiai` 和 `@tradecatlabs`，用于让关键目录变更自动请求维护者审查
 - `.github/lint_config.json` - markdownlint 规则，供 `make lint` 与 CI 共用

@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>研究域 · vibe-coding-cn 可视化</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="topbar" id="topbar"></header>
+
+<main class="wrap">
+  <div class="page-head">
+    <div class="kicker">Research Domains</div>
+    <h1>研究域</h1>
+    <p>这里存放<b>具体对象的原始事实</b>——对标开源项目、外部资料镜像和它们的冻结证据。
+      研究域只记事实与观察，可复用的方法正文在这里不落地，要提炼后进入功法体系。</p>
+  </div>
+
+  <section>
+    <h2><span class="n">01</span>三类目录，三种用途</h2>
+    <div class="grid g4" id="kinds"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">02</span>每个研究域的四层结构<span class="hint">从原始响应到深度研究</span></h2>
+    <div class="panel">
+      <div class="grid g4" id="layers"></div>
+      <div class="note info mt14 mb0">
+        <b>为什么要分四层：</b>原始响应（raw）是不可变的证据，任何人可以复查；
+        analysis 与 deep-dive 是基于证据的判断，可能被推翻。把两者放在不同文件里，
+        才能做到「观点变了不改证据」。
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">03</span>结构标准化程度<span class="hint">35 个对标研究域的文件构成</span></h2>
+    <div class="grid g2">
+      <div class="panel">
+        <div class="pt-head"><h3>标准文件清单</h3><span class="sub">每个对标研究域都有</span></div>
+        <div id="std-files"></div>
+      </div>
+      <div class="panel">
+        <div class="pt-head"><h3>raw 原始事实层覆盖</h3><span class="sub">有 raw 目录的域数量</span></div>
+        <div id="raw-cover"></div>
+        <div class="tiny faint mt8">raw 下固定包含 <span class="term">sources.yml</span>（来源清单）与各端点的原始响应文件，
+          由 <span class="term">make fetch-research-raw</span> 拉取、<span class="term">make check-research-raw</span> 校验。</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">04</span>全部研究域<span class="hint">按类型、结构完整度筛选</span></h2>
+    <div class="facets" id="facets"></div>
+    <div class="grid gauto" id="domains"></div>
+  </section>
+
+  <div class="footer">
+    <span>来源：<span class="term">research/*/</span> 实时扫描</span>
+    <span class="spacer"></span>
+    <span><a href="design.html#p04">→ 复习「分轴原则」</a></span>
+  </div>
+</main>
+
+<script src="assets/data.js"></script>
+<script src="assets/charts.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  const D = Viz.D, $ = Viz.$, esc = Viz.esc, nf = Viz.nf;
+  const R = D.research.domains;
+  const K = {
+    repo: { zh: "对标研究域", c: "var(--c-research)", d: "外部开源项目的结构化研究：README → analysis → deep-dive + raw" },
+    mirror: { zh: "外部源事实镜像", c: "var(--c-warn)", d: "整仓保留原样的外部资料，排除出全仓排版门禁，但边界单独校验" },
+    facts: { zh: "事实登记层", c: "var(--c-gongfa)", d: "外部源的事实登记、哈希与隐私边界" },
+    subject: { zh: "研究方向对象", c: "#a78bfa", d: "本仓自设的研究对象（如 Harness Engineering）" },
+  };
+
+  /* ---- 三类 ---- */
+  const cnt = {};
+  R.forEach(x => cnt[x.kind] = (cnt[x.kind] || 0) + 1);
+  $("#kinds").innerHTML = Object.entries(K).map(([k, v]) =>
+    `<div class="panel" style="border-left:3px solid ${v.c}">
+       <div class="mono-n" style="font-size:1.85rem;font-weight:700;color:${v.c}">${cnt[k] || 0}</div>
+       <div style="font-weight:650;font-size:.92rem;margin-top:2px">${v.zh}</div>
+       <div class="tiny faint mt8" style="line-height:1.5">${v.d}</div>
+     </div>`).join("");
+
+  /* ---- 四层 ---- */
+  const rawTotal = R.reduce((a, x) => a + x.rawFiles, 0);
+  const layers = [
+    { t: "L0 · raw/", n: rawTotal, d: "原始事实层：GitHub API 响应、许可证、语言统计、README 原文，冻结保存", c: "var(--c-warn)" },
+    { t: "L1 · README.md", n: cnt.repo + cnt.subject, d: "域入口：对象定位、角色说明与阅读顺序", c: "var(--c-research)" },
+    { t: "L2 · analysis.md", n: R.filter(x => x.analysis).length, d: "结构化研究：结论、可借鉴点、风险与下一轮任务", c: "var(--c-gongfa)" },
+    { t: "L3 · deep-dive.md", n: R.filter(x => x.deepDive).length, d: "深度研究：源码结构、关键机制与可迁移模式", c: "#a78bfa" },
+  ];
+  $("#layers").innerHTML = layers.map((l, i) =>
+    `<div class="panel flat">
+       <div class="mono-n" style="font-size:1.6rem;font-weight:700;color:${l.c}">${nf(l.n)}</div>
+       <div style="font-weight:650;font-size:.88rem;margin-top:2px">${esc(l.t)}</div>
+       <div class="tiny faint mt8" style="line-height:1.5">${esc(l.d)}</div>
+     </div>`).join("");
+
+  /* ---- 标准文件 ---- */
+  const STD = [
+    ["README.md", "域入口：对象定位与阅读顺序"],
+    ["AGENTS.md", "维护规则：谁能改、改完跑什么检查"],
+    ["analysis.md", "结构化研究结论"],
+    ["deep-dive.md", "深度研究：源码与机制"],
+    ["domain.yml", "拉取配置：对应 GitHub 对象与端点"],
+    ["raw/", "L0 原始事实层（不可变）"],
+  ];
+  $("#std-files").innerHTML = STD.map(([f, d]) =>
+    `<div class="di" style="grid-template-columns:130px 1fr">
+       <dt class="mono-n" style="font-size:.82rem">${esc(f)}</dt><dd class="small muted">${esc(d)}</dd>
+     </div>`).join("");
+
+  const withRaw = R.filter(x => x.raw).length;
+  const withYml = R.filter(x => x.domainYml).length;
+  $("#raw-cover").innerHTML = [
+    ["有 raw 原始事实层", withRaw, R.length, "var(--c-warn)"],
+    ["有 domain.yml 拉取配置", withYml, R.length, "var(--c-research)"],
+    ["有 analysis + deep-dive", R.filter(x => x.analysis && x.deepDive).length, R.length, "var(--c-gongfa)"],
+  ].map(([l, v, t, c]) =>
+    `<div class="mb14">
+       <div class="row tight mb8"><span class="small">${esc(l)}</span>
+         <span class="spacer"></span><span class="mono-n small">${v} / ${t}</span></div>
+       <div class="bt" style="height:9px;background:var(--track);border-radius:4px;overflow:hidden">
+         <div style="height:100%;width:${(v / t * 100).toFixed(0)}%;background:${c};border-radius:4px"></div>
+       </div>
+     </div>`).join("");
+
+  /* ---- 分面 ---- */
+  Viz.createFacets({
+    root: "#facets", host: "#domains", items: R,
+    search: (x, q) => (x.dir + x.title + x.role).toLowerCase().includes(q),
+    searchPlaceholder: "搜索 40 个研究域…",
+    dimensions: [
+      { key: "kind", label: "类型", get: x => x.kind,
+        values: Object.keys(K).map(k => ({ v: k, label: K[k].zh,
+          color: k === "repo" ? "var(--c-research)" : k === "mirror" ? "var(--c-warn)" : undefined })) },
+      { key: "raw", label: "原始层", get: x => x.raw ? "yes" : "no",
+        values: [{ v: "yes", label: "有 raw" }, { v: "no", label: "无 raw" }] },
+      { key: "deep", label: "深度研究", get: x => x.deepDive ? "yes" : "no",
+        values: [{ v: "yes", label: "已深挖" }, { v: "no", label: "未深挖" }] },
+    ],
+    render(list, host) {
+      host.innerHTML = list.map(x => {
+        const k = K[x.kind] || K.repo;
+        return `<div class="panel" style="border-left:3px solid ${k.c}">
+          <div class="row tight mb8">
+            <b style="font-size:.92rem">${esc(x.dir)}</b>
+            <span class="spacer"></span>
+            <span class="pill" style="background:color-mix(in srgb,${k.c} 14%,transparent);color:${k.c}">${esc(k.zh)}</span>
+          </div>
+          ${x.role ? `<div class="small muted mb8">${esc(x.role)}</div>` : ""}
+          <div class="row tight">
+            <span class="pill mono-n">${x.files} 文件</span>
+            ${x.rawFiles ? `<span class="pill">raw ${x.rawFiles}</span>` : ""}
+            ${x.deepDive ? `<span class="pill ok">已深挖</span>` : ""}
+            ${x.analysis && !x.deepDive ? `<span class="pill warn">仅分析</span>` : ""}
+            ${x.notes ? `<span class="pill">notes</span>` : ""}
+          </div>
+        </div>`;
+      }).join("");
+    },
+  });
+})();
+</script>
+</body>
+</html>

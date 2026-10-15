@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>质量门禁 · vibe-coding-cn 可视化</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="topbar" id="topbar"></header>
+
+<main class="wrap">
+  <div class="page-head">
+    <div class="kicker">Quality Gates</div>
+    <h1>质量门禁</h1>
+    <p>这个仓库的核心主张之一是：<b>写下来的规则不算数，跑得起来的才算数</b>。
+      每条约定背后都有一个 Python 脚本，<span class="term">make test</span> 把它们串成一条链。</p>
+  </div>
+
+  <section>
+    <h2><span class="n">01</span>门禁规模</h2>
+    <div class="grid g5" id="kpis"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">02</span>一组门禁守护一类不变量<span class="hint">点分组筛选下方表格</span></h2>
+    <div class="grid gauto" id="groups"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">03</span>全部目标<span class="hint">含手动写入 / 拉取类命令</span></h2>
+    <div class="facets" id="facets"></div>
+    <div class="scroll-x"><table class="tbl" id="targets"></table></div>
+  </section>
+
+  <section>
+    <h2><span class="n">04</span>make test 串了什么<span class="hint">一条命令跑完全部硬门禁</span></h2>
+    <div class="panel">
+      <div class="flow-nodes" id="chain"></div>
+      <div class="note info mt14 mb0">
+        <b>写与读分开：</b><span class="term">sync-*</span> 负责生成视图，<span class="term">check-*</span> 只读校验，
+        <span class="term">test-*</span> 验证维护行为本身。<span class="term">make test</span> 只串只读校验——
+        跑门禁永远不会改仓库。
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">05</span>豁免不等于不管<span class="hint">被排除的路径与守着它们的门禁</span></h2>
+    <div class="grid g2">
+      <div class="panel">
+        <div class="pt-head"><h3>排版检查跳过的路径</h3></div>
+        <div id="excluded"></div>
+      </div>
+      <div class="panel">
+        <div class="pt-head"><h3>但边界本身有专属门禁</h3></div>
+        <div id="boundary"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer">
+    <span>来源：<span class="term">Makefile</span> · <span class="term">scripts/</span> 实时解析</span>
+    <span class="spacer"></span>
+    <span><a href="design.html#p05">→ 复习「门禁即契约」</a></span>
+  </div>
+</main>
+
+<script src="assets/data.js"></script>
+<script src="assets/charts.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  const D = Viz.D, $ = Viz.$, esc = Viz.esc, nf = Viz.nf;
+  const Gt = D.gates.targets;
+
+  const KIND = n =>
+    n.startsWith("sync-") ? "写" : n.startsWith("check-") ? "读" :
+    n.startsWith("test-") ? "测" : n.startsWith("fetch-") ? "拉" : "其他";
+  const KIND_C = { "读": "var(--c-gate)", "写": "var(--c-faqi)", "测": "#a78bfa", "拉": "var(--c-warn)", "其他": "var(--text-faint)" };
+
+  const checks = Gt.filter(t => KIND(t.name) === "读").length;
+  const syncs = Gt.filter(t => KIND(t.name) === "写").length;
+  const tests = Gt.filter(t => KIND(t.name) === "测").length;
+
+  const kpis = [
+    [Gt.length, "Make 目标", "全部可执行入口", "var(--c-struct)"],
+    [D.gates.testCount, "被 make test 串联", "一条命令跑完的硬门禁", "var(--c-gate)"],
+    [checks, "只读校验", "check-* 不修改仓库", "var(--c-gate)"],
+    [syncs, "写入命令", "sync-* 生成只读视图", "var(--c-faqi)"],
+    [tests, "行为测试", "验证维护契约本身", "#a78bfa"],
+  ];
+  $("#kpis").innerHTML = kpis.map(([v, l, x, c]) =>
+    `<div class="stat" style="--stat-c:${c}"><span class="v">${v}</span>
+      <span class="l">${esc(l)}</span><span class="x">${esc(x)}</span></div>`).join("");
+
+  /* ---- 分组 ---- */
+  const GROUPS = {
+    "格式": { c: "var(--c-struct)", d: "Markdown 排版、内部链接、折叠块结构" },
+    "结构": { c: "var(--c-struct)", d: "docs README 块顺序、目录文档覆盖、metadata 路径" },
+    "功法": { c: "var(--c-gongfa)", d: "登记 JSON、冻结来源、总表两视图一致性" },
+    "法器": { c: "var(--c-faqi)", d: "法器登记、依赖图 SHA、外部资源视图" },
+    "引用": { c: "var(--c-ai)", d: "llms 与 AI 引用语料的路径、锚点、仓库身份" },
+    "资源": { c: "var(--c-faqi)", d: "外部资源注册表字段、分类统计与 ID" },
+    "研究": { c: "var(--c-research)", d: "raw 原始层、Git 工作树、来源清单、隐私边界" },
+    "研究（手动）": { c: "var(--c-warn)", d: "不纳入自动门禁的手动拉取命令" },
+    "工具": { c: "var(--text-faint)", d: "目录生成、缓存清理等辅助目标" },
+    "总入口": { c: "var(--c-gate)", d: "串联全部硬门禁" },
+  };
+  const byGroup = {};
+  Gt.forEach(t => { (byGroup[t.group] = byGroup[t.group] || []).push(t); });
+
+  $("#groups").innerHTML = Object.entries(byGroup).map(([g, list]) => {
+    const meta = GROUPS[g] || { c: "var(--text-faint)", d: "" };
+    const inTest = list.filter(t => t.inTest).length;
+    return `<div class="panel tight" style="border-left:3px solid ${meta.c}" data-group="${esc(g)}">
+      <div class="row tight mb8">
+        <b style="font-size:.9rem">${esc(g)}</b>
+        <span class="spacer"></span>
+        <span class="pill mono-n">${list.length}</span>
+        ${inTest ? `<span class="pill ok mono-n">${inTest} 在 test</span>` : ""}
+      </div>
+      <div class="tiny faint mb8" style="line-height:1.45">${esc(meta.d)}</div>
+      <div class="row tight">${list.map(t =>
+        `<span class="pill mono-n tiny">${esc(t.name)}</span>`).join("")}</div>
+    </div>`;
+  }).join("");
+
+  /* ---- 目标表 ---- */
+  Viz.createFacets({
+    root: "#facets", host: "#targets", items: Gt,
+    search: (t, q) => (t.name + t.desc + t.guards).toLowerCase().includes(q),
+    searchPlaceholder: "搜索目标名或用途…",
+    dimensions: [
+      { key: "kind", label: "类型", get: t => KIND(t.name),
+        values: Object.keys(KIND_C).map(k => ({ v: k, label: k, color: KIND_C[k] })) },
+      { key: "group", label: "分组", get: t => t.group,
+        values: Object.keys(byGroup).map(g => ({ v: g, label: g })) },
+      { key: "inTest", label: "自动", get: t => t.inTest ? "y" : "n",
+        values: [{ v: "y", label: "在 make test 中" }, { v: "n", label: "手动执行" }] },
+    ],
+    render(list, host) {
+      host.innerHTML =
+        `<thead><tr><th>目标</th><th>类型</th><th>守护什么</th><th>用途</th><th>自动</th></tr></thead><tbody>` +
+        list.map(t => `<tr>
+          <td class="nowrap"><b class="mono-n" style="font-size:.84rem">${esc(t.name)}</b></td>
+          <td><span class="tag" style="color:${KIND_C[KIND(t.name)]};border-color:currentColor">${KIND(t.name)}</span></td>
+          <td class="small">${esc(t.guards)}</td>
+          <td class="small faint">${esc(t.desc)}</td>
+          <td>${t.inTest ? '<span class="pill ok">✓</span>' : '<span class="pill">—</span>'}</td>
+        </tr>`).join("") + "</tbody>";
+    },
+  });
+
+  /* ---- 串联链 ---- */
+  $("#chain").innerHTML = D.gates.inTest.map(n =>
+    `<div class="node sm" style="--node-c:${KIND_C[KIND(n)]}">${esc(n)}</div>`).join("");
+
+  /* ---- 豁免 ---- */
+  const exc = D.gates.excludedFromLint;
+  $("#excluded").innerHTML = exc.length ? exc.map(e =>
+    `<div class="di" style="grid-template-columns:1fr;gap:2px">
+       <dt class="mono-n tiny" style="word-break:break-all">${esc(e)}</dt>
+       <dd class="tiny faint">${
+         e.includes("tools/external") ? "第三方 submodule 源码，保留原样" :
+         e.includes("repository") ? "研究对象的工作树克隆" :
+         e.includes("facts") ? "外部源事实登记" : "外部源事实镜像，整仓保留原样"}</dd>
+     </div>`).join("") : `<div class="empty">未登记豁免</div>`;
+
+  $("#boundary").innerHTML = Gt.filter(t => ["check-source-facts", "check-research-raw", "check-wiki"].includes(t.name))
+    .map(t => `<div class="panel tight flat mb8">
+       <b class="mono-n" style="font-size:.84rem">${esc(t.name)}</b>
+       <div class="small muted mt8">${esc(t.guards)}</div>
+     </div>`).join("") +
+    `<div class="small muted mt8">豁免的是排版规则，不是事实核对。镜像里的文件数、来源哈希、隐私条目仍在被逐条检查。</div>`;
+})();
+</script>
+</body>
+</html>

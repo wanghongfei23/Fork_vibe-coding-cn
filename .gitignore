@@ -100,3 +100,9 @@ backups/gz/
 
 # Local-only enterprise architecture evidence kit
 .github/assets/templates/modern-enterprise-architecture-private/
+
+# viz 图册：放行 build/ 下的生成脚本，继续忽略渲染截图等产物
+# （上面的 `build/` 规则会连 viz/build/ 一起忽略，这里按需反选）
+!viz/build/
+viz/build/*
+!viz/build/*.py

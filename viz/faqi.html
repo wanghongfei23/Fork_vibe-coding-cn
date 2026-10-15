@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>法器体系 · vibe-coding-cn 可视化</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="topbar" id="topbar"></header>
+
+<main class="wrap">
+  <div class="page-head">
+    <div class="kicker">Faqi Registry</div>
+    <h1>法器体系</h1>
+    <p>「法器」是这个项目对<span class="term">工具与依赖</span>的称呼。它登记了 30 项在 Vibe Coding 流程里被用到的工具、
+      CLI、运行时和依赖类别，并且用一整页篇幅反复声明一件事：<b>重要性排序不是效果评级</b>。</p>
+  </div>
+
+  <section>
+    <h2><span class="n">01</span>这条轴已经定了，那条轴还是空的</h2>
+    <div class="grid g2">
+      <div class="panel accent-faqi">
+        <div class="pt-head"><h3>轴 A · 重要性分级</h3><span class="pill ok right">已形成</span></div>
+        <div class="grid g4" id="tier-grid" style="gap:10px"></div>
+        <div class="small muted mt14">
+          按「在 Vibe Coding 核心闭环中的作用、对代码执行与验证的支撑、适用范围、可替代性」综合判断，由用户确认形成暂定排序。
+          同阶内的高级 / 中级 / 初级表示<b>阶内重要性次序</b>，不是测试结果带。
+        </div>
+      </div>
+      <div class="panel accent-danger">
+        <div class="pt-head"><h3>轴 B · 正式效能评级</h3><span class="pill no right">未产出</span></div>
+        <div id="limits"></div>
+        <div class="note danger mt14 mb0 small">
+          量规 <span class="term">faqi-grade-vocabulary-v1</span> 仍是 <b>draft</b>，任务合同、基线与阈值均未校准。
+          因此「正式效能结论为零」不是遗漏，而是<b>按设计</b>不产出——没有可复核的证据就不给结论。
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">02</span>同一批对象，八种数法<span class="hint">这是全仓最值得学的一张表</span></h2>
+    <div class="panel">
+      <div class="scroll-x">
+        <table class="tbl" id="counts"></table>
+      </div>
+      <div class="note info mt14 mb0">
+        <b>为什么一个对象会有多个数字：</b>每个数字回答的是不同问题——「多少条暂定了重要性」「多少条有仓内实现来源」
+        「多少条只是依赖图上的具名候选」。把它们加总或互相比大小，得到的都是错的口径。
+        仓库把这些视角<b>各自登记、分别说明</b>，而不是合并成一个「法器总数」。
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">03</span>30 项重要性浏览<span class="hint">按阶与登记视角筛选</span></h2>
+    <div class="facets" id="facets"></div>
+    <div class="grid gauto-lg" id="items"></div>
+  </section>
+
+  <div class="footer">
+    <span>来源：<span class="term">metadata/faqi.json</span> · <span class="term">tools/faqi-catalog.md</span></span>
+    <span class="spacer"></span>
+    <span><a href="gates.html">→ 法器也有自己的三道门禁</a></span>
+  </div>
+</main>
+
+<script src="assets/data.js"></script>
+<script src="assets/charts.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  const D = Viz.D, $ = Viz.$, esc = Viz.esc, nf = Viz.nf;
+  const F = D.faqi;
+  const TIER_C = { tian: "#f0abfc", di: "#fbbf24", xuan: "#60a5fa", huang: "#94a3b8" };
+  const TIER_MEAN = {
+    tian: "决定核心 AI 协作链能否成立",
+    di: "支撑代码真正被操作、运行和管理",
+    xuan: "扩展复杂任务的上下文、质量与交付范围",
+    huang: "对特定工作方式有帮助，但通常有替代路径",
+  };
+  const CAT_ZH = { impl: "仓内实现", dep: "依赖图对象", category: "依赖类别" };
+
+  /* ---- 轴 A ---- */
+  const TT = F.tierTotals;
+  const tierList = ["tian", "di", "xuan", "huang"];
+  $("#tier-grid").innerHTML = tierList.map(t =>
+    `<div class="panel tight flat" style="border-top:3px solid ${TIER_C[t]};text-align:center">
+       <div class="mono-n" style="font-size:1.75rem;font-weight:700;color:${TIER_C[t]}">${TT[t]}</div>
+       <div style="font-size:.84rem;font-weight:600">${{tian:"天阶",di:"地阶",xuan:"玄阶",huang:"黄阶"}[t]}</div>
+       <div class="tiny faint" style="margin-top:2px;line-height:1.35">${TIER_MEAN[t]}</div>
+     </div>`).join("");
+
+  /* ---- 轴 B ---- */
+  const L = F.limits;
+  const limRows = [
+    ["独立审查", "independent_review", "是否经过独立第三方审查"],
+    ["运行验证", "runtime_verified", "是否在实际环境中验证可运行"],
+    ["效果验证", "effectiveness_verified", "是否有固定任务合同下的效果证据"],
+    ["许可批准", "license_approved", "是否完成许可证核验"],
+    ["重要性分级", "grades_assigned", "是否已给出导航性重要性排序"],
+  ];
+  $("#limits").innerHTML = limRows.map(([zh, k, desc]) => {
+    const on = !!L[k];
+    return `<div class="di" style="grid-template-columns:110px 1fr auto;align-items:center">
+      <dt style="font-size:.85rem">${zh}</dt>
+      <dd class="tiny faint">${desc}</dd>
+      <dd><span class="pill ${on ? "ok" : "no"}">${on ? "已具备" : "未具备"}</span></dd>
+    </div>`;
+  }).join("");
+
+  /* ---- 八种数法 ---- */
+  const rows = [
+    ["30", "暂定重要性分级", "provisional_grade_assignments", "已给品级的条目数（导航视图）", "= 浏览表条目数"],
+    ["10", "来源限定实现", "objects", "绑定仓内来源与代码内容的程序", "是子集"],
+    ["12", "依赖图具名对象", "dependency_graph.objects", "依赖图上具名的运行实例或候选", "是子集"],
+    ["13", "本地路径记录", "local_entries", "按本地路径登记的入口，未必各自独立成器", "是子集"],
+    ["8", "用户确认的依赖类别", "dep-category-*", "抽象类别，如模型服务 / CI 平台 / 终端接口", "是子集"],
+    ["9", "本地范围排除", "local_exclusions", "明确排除出法器范围的对象（含理由）", "不计数"],
+    ["9", "依赖图本地关联", "relations", "只表达关系，不重复计作对象", "不计数"],
+    [String(F.extRows), "外部资源登记行", "assets/external-resources/*.yml", "工具 / 图书 / 课程 / 社群等资源索引行", "≠ 法器数"],
+  ];
+  $("#counts").innerHTML =
+    `<thead><tr><th class="num">数量</th><th>口径名称</th><th>登记字段</th><th>它其实在数什么</th><th>能否当法器数</th></tr></thead><tbody>` +
+    rows.map(([n, name, field, what, verdict]) => {
+      const bad = verdict.startsWith("≠");
+      return `<tr>
+        <td class="num"><b style="font-size:1.05rem">${esc(n)}</b></td>
+        <td class="nowrap"><b style="font-size:.86rem">${esc(name)}</b></td>
+        <td class="mono-n tiny faint">${esc(field)}</td>
+        <td class="small muted">${esc(what)}</td>
+        <td class="nowrap ${bad ? "" : "small"}"><span class="pill ${bad ? "no" : "info"}">${esc(verdict)}</span></td>
+      </tr>`;
+    }).join("") + "</tbody>";
+
+  /* ---- 分面 ---- */
+  const segZh = { advanced: "高级", intermediate: "中级", initial: "初级" };
+  Viz.createFacets({
+    root: "#facets", host: "#items", items: F.items,
+    search: (i, q) => (i.name + i.explain).toLowerCase().includes(q),
+    searchPlaceholder: "搜索 30 项法器…",
+    dimensions: [
+      { key: "tier", label: "阶", get: i => i.tier,
+        values: tierList.map(t => ({ v: t, label: { tian: "天阶", di: "地阶", xuan: "玄阶", huang: "黄阶" }[t], color: TIER_C[t] })) },
+      { key: "cat", label: "登记视角", get: i => i.cat,
+        values: ["impl", "dep", "category"].map(c => ({ v: c, label: CAT_ZH[c] })) },
+      { key: "seg", label: "阶内", get: i => i.seg,
+        values: ["advanced", "intermediate", "initial"].map(s => ({ v: s, label: segZh[s] })) },
+    ],
+    render(list, host) {
+      host.innerHTML = list.map(i =>
+        `<div class="entry t-${i.tier}">
+           <div class="eh">
+             <span class="en">${esc(i.name)}</span>
+             <span class="tag ${i.tier}">${i.gradeZh}</span>
+           </div>
+           <div class="es">${esc(i.explain.replace(/^Vibe Coding重要性：/, ""))}</div>
+           <div class="em">
+             <span class="pill">${esc(CAT_ZH[i.cat] || "—")}</span>
+             <span class="pill" style="background:color-mix(in srgb,var(--c-warn) 14%,transparent);color:var(--c-warn)">效能未评</span>
+           </div>
+         </div>`).join("");
+    },
+  });
+})();
+</script>
+</body>
+</html>

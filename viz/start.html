@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>从这里开始 · vibe-coding-cn 可视化</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="topbar" id="topbar"></header>
+
+<main class="wrap">
+  <div class="page-head">
+    <div class="kicker">Start Here</div>
+    <h1>从这里开始</h1>
+    <p>这套图册画的是一个叫 <span class="term">vibe-coding-cn</span> 的仓库。
+      但理解它之前，得先理解它想做的事——<b>Vibe Coding</b>。
+      这一页负责把你带进门：先认识这件事，再找到自己的入口。</p>
+  </div>
+
+  <section>
+    <h2><span class="n">01</span>Vibe Coding 是什么<span class="hint">先看别人怎么说</span></h2>
+    <div class="grid g2">
+      <div class="panel accent-struct">
+        <div class="pt-head"><h3>一句话定义</h3></div>
+        <blockquote class="quote" style="font-size:.95rem">
+          Vibe Coding（氛围编程）是一种全新的编程范式，我们不需要一行行手写代码，
+          而是用自然语言描述你想要什么，AI 来写代码、我们负责审查和把控方向。
+          <span class="src">菜鸟教程《Vibe Coding 入门教程》</span>
+        </blockquote>
+        <div class="quote mt14">
+          I just vibe. I don't even touch the keyboard sometimes. I just talk to the AI,
+          it writes the code, I review it, and we iterate.
+          <span class="src">Andrej Karpathy，该词的最早提出者</span>
+        </div>
+      </div>
+      <div class="panel accent-gate">
+        <div class="pt-head"><h3>它其实就四步</h3><span class="sub">一直循环到满意为止</span></div>
+        <div class="flow-nodes" style="gap:8px">
+          <span class="node sm" style="--node-c:var(--c-struct)"><b>① 你描述</b><span>用自然语言说清要什么</span></span>
+          <span class="arrow">→</span>
+          <span class="node sm" style="--node-c:var(--c-ai)"><b>② AI 写码</b><span>生成或修改文件</span></span>
+          <span class="arrow">→</span>
+          <span class="node sm" style="--node-c:var(--c-warn)"><b>③ 你审查</b><span>看懂它到底改了什么</span></span>
+          <span class="arrow">→</span>
+          <span class="node sm" style="--node-c:var(--c-gate)"><b>④ 迭代</b><span>不满意就再说一遍</span></span>
+        </div>
+        <div class="note mt14 mb0 small">
+          攻略把<b>第三步「审查」</b>称为整个流程里最重要的一环——
+          「你必须看懂 AI 改了什么」。记住这句话，后面会用到。
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">02</span>那这个项目是干嘛的<span class="hint">它和上面四步的关系</span></h2>
+    <div class="panel">
+      <div class="flow" id="bridge"></div>
+      <div class="note info mt14 mb0">
+        <b>说人话：</b>别人告诉你「AI 写代码、你来审查」；这个项目告诉你的是——
+        <b>审查这件事，怎么才能不流于形式。</b>
+        它的办法是把能机器化的审查全部写成脚本，一条命令跑完十几项检查；
+        机器审不了的部分，就老实登记成「缺口」，而不是假装审过了。
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">03</span>从零开始的五步<span class="hint">每一步都告诉你去哪看、要点什么</span></h2>
+    <div class="grid gauto" id="steps"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">04</span>你会撞见的词<span class="hint">这个项目有一套自己的叫法，先认几个</span></h2>
+    <div class="grid gauto" id="words"></div>
+    <div class="mt14 small muted">
+      完整对照表在 <a href="glossary.html">术语对照</a> 页。这些词只是命名风格，
+      含义都以工程定义为准——「功法」不是玄学，是「可复用的方法论」。
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">05</span>按你的目的选入口<span class="hint">不用从头读完</span></h2>
+    <div class="grid g3" id="forks"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">06</span>关于那篇攻略</h2>
+    <div class="panel accent-warn">
+      <div class="pt-head"><h3>这是一份独立完整的入门教程</h3></div>
+      <div class="small">
+        本图册把 <a href="https://www.runoob.com/ai-agent/vibe-coding-start.html" target="_blank" rel="noopener">菜鸟教程《Vibe Coding 入门教程》</a>
+        当作入门读物来配合使用，<b>不逐条拆解、不改写它的内容</b>——它自成一体，
+        讲的是一套通用的入门路径（什么是 Vibe Coding、和传统编程的区别、有哪些工具、
+        怎么开始第一个项目、提示词怎么写、有哪些坑）。
+      </div>
+      <div class="hr"></div>
+      <div class="small muted">
+        两者是<b>两条独立的线</b>：攻略教你「Vibe Coding 这件事」；
+        这套图册给你看「一个把这件事做成工程体系的具体项目长什么样」。
+        先读攻略建立概念，再用本图册看实例，两边各自完整，不需要互相对照。
+      </div>
+    </div>
+  </section>
+
+  <div class="footer">
+    <span>下一步：<a href="index.html">项目总览</a> 看这个仓库的全貌</span>
+    <span class="spacer"></span>
+    <span class="faint">按 <b class="mono-n">P</b> 可切演示模式投屏</span>
+  </div>
+</main>
+
+<script src="assets/data.js"></script>
+<script src="assets/charts.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  const D = Viz.D, $ = Viz.$, esc = Viz.esc, nf = Viz.nf;
+
+  /* ---- 01 → 02 的桥接 ---- */
+  const bridge = [
+    { label: "攻略给的", sub: "通用原则", nodes: [
+      { t: "描述需求", d: "用自然语言说清要什么", c: "var(--c-struct)" },
+      { t: "审查 Diff", d: "「最重要的一环」", c: "var(--c-warn)" },
+      { t: "迭代交付", d: "不满意就再来一轮", c: "var(--c-gate)" },
+    ]},
+    { label: "现实问题", sub: "为什么需要项目", nodes: [
+      { t: "人会累、会跳读", d: "靠「记得审查」的约定守不住", c: "var(--c-danger)" },
+      { t: "AI 不会自己审", d: "它只是生成，不负责把关", c: "var(--c-danger)" },
+      { t: "「看起来做完了」", d: "最难发现的问题都在这里", c: "var(--c-danger)" },
+    ]},
+    { label: "项目的回答", sub: "可执行的做法", nodes: [
+      { t: D.gates.targets.length + " 个 Make 目标", d: "把审查写成脚本", c: "var(--c-gate)" },
+      { t: D.gates.testCount + " 项串联门禁", d: "make test 一次跑完", c: "var(--c-gate)" },
+      { t: "缺口如实登记", d: "缺什么就写缺什么，不补默认值", c: "var(--c-warn)" },
+    ]},
+  ];
+  $("#bridge").innerHTML = bridge.map(b =>
+    `<div class="flow-band">
+       <div class="fb-label">${esc(b.label)}<small>${esc(b.sub)}</small></div>
+       <div class="flow-nodes">${b.nodes.map(n =>
+         `<div class="node sm" style="--node-c:${n.c}"><b>${esc(n.t)}</b><span>${esc(n.d)}</span></div>`).join("")}</div>
+     </div>`).join("");
+
+  /* ---- 五步 ---- */
+  const steps = [
+    { n: "①", t: "先认词", d: "这个项目管方法叫「功法」、管工具叫「法器」，先花两分钟认几个，后面不卡。",
+      where: "术语对照页", href: "glossary.html", c: "var(--c-warn)" },
+    { n: "②", t: "配环境", d: "网络能不能通、CLI 装哪个、开发环境怎么搭——项目里有完整的从零配置路线。",
+      where: ".github/docs/getting-started/", href: "research.html", c: "var(--c-struct)" },
+    { n: "③", t: "做第一个项目", d: "用一个本地待办清单，走通需求 → 实现 → 验收 → Git 保存的完整闭环。",
+      where: "first-project.md", href: "gongfa.html", c: "var(--c-gongfa)" },
+    { n: "④", t: "学会用现成资产", d: "提示词库、可复用技能、外部资源——不用每次都从零问 AI。",
+      where: "prompts / skills / assets", href: "roles.html", c: "var(--c-faqi)" },
+    { n: "⑤", t: "守住质量", d: "知道有哪些门禁在替你检查，出问题怎么定位。这是这个项目最硬的部分。",
+      where: "质量门禁页", href: "gates.html", c: "var(--c-gate)" },
+  ];
+  $("#steps").innerHTML = steps.map(s =>
+    `<a href="${s.href}" class="panel" style="border-left:3px solid ${s.c};display:block;color:inherit">
+       <div class="row tight mb8">
+         <span class="mono-n" style="font-size:1.25rem;color:${s.c};font-weight:700">${s.n}</span>
+         <b style="font-size:.98rem">${esc(s.t)}</b>
+       </div>
+       <div class="small muted" style="min-height:3.2em">${esc(s.d)}</div>
+       <div class="tiny mono-n faint mt8">${esc(s.where)}</div>
+     </a>`).join("");
+
+  /* ---- 认词 ---- */
+  const words = [
+    ["功法", "可复用的方法论、准则、思维模型", "var(--c-gongfa)"],
+    ["法器", "工具、CLI、运行时、依赖类别", "var(--c-faqi)"],
+    ["品级", "黄/玄/地/天 四阶十二级的评级量表", "var(--c-warn)"],
+    ["门禁", "由脚本执行的硬性检查", "var(--c-gate)"],
+    ["登记", "给一条内容正式建档：ID + 版本 + 来源", "var(--c-struct)"],
+    ["文集", "组织与阅读单位，不等于一条功法", "var(--c-ai)"],
+  ];
+  $("#words").innerHTML = words.map(([w, d, c]) =>
+    `<div class="panel tight" style="border-left:3px solid ${c}">
+       <div class="row tight"><b style="font-size:.95rem;color:${c}">${esc(w)}</b></div>
+       <div class="tiny muted mt8">${esc(d)}</div>
+     </div>`).join("");
+
+  /* ---- 三个入口 ---- */
+  const forks = [
+    { t: "我只想快点用起来", d: "跳过原理，直接看这个项目提供了什么能拿来用的东西：提示词、技能、工具配置、外部资源。",
+      href: "roles.html", btn: "看三种读者入口", c: "var(--c-faqi)" },
+    { t: "我想学方法", d: "看它整理了哪些可复用的方法、怎么组织成体系、怎么判断一条方法能不能用。",
+      href: "gongfa.html", btn: "进功法体系", c: "var(--c-gongfa)" },
+    { t: "我想搞懂它怎么设计的", d: "看一个文档仓库是如何被当成软件系统来治理的：单一数据源、生成视图、身份与版本、门禁契约。",
+      href: "design.html", btn: "进设计思路", c: "var(--c-struct)" },
+  ];
+  $("#forks").innerHTML = forks.map(f =>
+    `<div class="panel" style="border-left:3px solid ${f.c};display:flex;flex-direction:column">
+       <b style="font-size:.98rem;margin-bottom:9px">${esc(f.t)}</b>
+       <div class="small muted" style="flex:1">${esc(f.d)}</div>
+       <a href="${f.href}" class="pill mt14" style="background:color-mix(in srgb,${f.c} 16%,transparent);color:${f.c};align-self:flex-start">${esc(f.btn)} →</a>
+     </div>`).join("");
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>三种读者 · vibe-coding-cn 可视化</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="topbar" id="topbar"></header>
+
+<main class="wrap">
+  <div class="page-head">
+    <div class="kicker">Three Readers</div>
+    <h1>三种读者，三套入口</h1>
+    <p>同一份内容，人类、AI 和机器看到的入口完全不同——但它们指向的是<b>同一批文件</b>。
+      这套机制解决的是「人改的规则 AI 不知道，AI 的理解人看不见」这个协作断层。</p>
+  </div>
+
+  <section>
+    <h2><span class="n">01</span>三栏对照</h2>
+    <div class="grid g3" id="cards"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">02</span>文档覆盖矩阵<span class="hint">每个内容树都必须配 README 和 AGENTS</span></h2>
+    <div class="panel">
+      <div class="scroll-x"><table class="tbl" id="cover"></table></div>
+      <div class="note info mt14 mb0">
+        <b>为什么每个目录都要有一份 AGENTS.md：</b>AI 进入一个目录时，不需要读全仓规则，
+        只需要读这个目录的局部约束——能改什么、不能改什么、改完跑什么命令。
+        这条约定本身也有门禁守着（<span class="term">check-directory-docs</span>）。
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">03</span>按身份分岔的阅读路径<span class="hint">taxonomy.yml 里登记的五条路线</span></h2>
+    <div class="facets" id="path-facets"></div>
+    <div id="paths"></div>
+  </section>
+
+  <div class="footer">
+    <span>来源：<span class="term">metadata/taxonomy.yml</span> 的 <span class="term">reading_paths</span> 与目录扫描</span>
+    <span class="spacer"></span>
+    <span><a href="glossary.html">→ 术语对照</a></span>
+  </div>
+</main>
+
+<script src="assets/data.js"></script>
+<script src="assets/charts.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  const D = Viz.D, $ = Viz.$, esc = Viz.esc, nf = Viz.nf;
+  const O = D.overview;
+
+  const ROLES = [
+    { k: "human", t: "👤 人类读者", c: "var(--c-struct)",
+      want: "我想知道这是什么、从哪开始、怎么用。",
+      entry: [
+        ["README.md", "仓库首页：定位、徽章、入口表、常见问题"],
+        ["docs/README.md", "知识库总索引，按目标选路线"],
+        ["docs/gongfa/README.md", "按「当前问题」选方法，不按目录分库"],
+        ["docs/getting-started/", "要动手就从这里开始"],
+      ],
+      rule: "人类入口永远不用读 JSON。所有机器格式都有对应的表格视图。",
+    },
+    { k: "ai", t: "🤖 AI Agent", c: "var(--c-ai)",
+      want: "我能改什么、不能改什么、改完怎么证明没改坏。",
+      entry: [
+        ["AGENTS.md（根）", "全局操作手册：允许/禁止/敏感区域/仓库地图"],
+        ["<目录>/AGENTS.md", "局部规则：该目录的职责边界与验证命令"],
+        ["llms.txt", "短上下文入口，快速了解项目定位"],
+        ["llms-full.txt", "完整上下文入口，含全部路径索引"],
+      ],
+      rule: "不确定的内容用 TODO 标注，<b>不允许猜测</b>；禁止顺手重构、禁止删测试、禁止硬编码密钥。",
+    },
+    { k: "machine", t: "⚙️ 机器 / 脚本", c: "var(--c-faqi)",
+      want: "我要一份不会骗人的数据结构。",
+      entry: [
+        ["metadata/gongfa/registry.json", "功法 ID、版本、来源、初评的唯一可编辑源"],
+        ["metadata/faqi.json", "法器登记与依赖图对象"],
+        ["metadata/taxonomy.yml", "路径 → 角色映射，链接检查的依据"],
+        ["metadata/*.yml", "术语表、重定向表、分类体系"],
+      ],
+      rule: "生成视图（catalog.md / .xlsx / faqi-catalog.md）带 <span class='term'>generated:</span> 标记，禁止手改。",
+    },
+  ];
+
+  $("#cards").innerHTML = ROLES.map(r =>
+    `<div class="panel" style="border-left:3px solid ${r.c};display:flex;flex-direction:column">
+       <div class="row tight mb8">
+         <b style="font-size:1rem">${esc(r.t)}</b>
+       </div>
+       <div class="small muted mb14" style="font-style:italic">「${esc(r.want)}」</div>
+       <div class="small faint mb8" style="font-weight:700;letter-spacing:.05em;font-size:.72rem">入口顺序</div>
+       <div style="flex:1">
+         ${r.entry.map(([p, d], i) =>
+           `<div class="row" style="align-items:flex-start;gap:8px;margin-bottom:7px">
+              <span class="mono-n tiny" style="color:${r.c};font-weight:700;padding-top:2px">${i + 1}</span>
+              <span><span class="mono-n" style="font-size:.8rem">${esc(p)}</span>
+              <div class="tiny faint" style="line-height:1.4">${esc(d)}</div></span>
+            </div>`).join("")}
+       </div>
+       <div class="note ${r.k === "ai" ? "danger" : r.k === "machine" ? "" : "info"} mb0 small" style="margin-top:12px">
+         ${r.rule}
+       </div>
+     </div>`).join("");
+
+  /* ---- 覆盖矩阵 ---- */
+  $("#cover").innerHTML =
+    `<thead><tr><th>内容树</th><th>职责</th><th class="num">文件</th><th class="num">Markdown</th>
+      <th class="num">README</th><th class="num">AGENTS</th></tr></thead><tbody>` +
+    O.dirs.map(d =>
+      `<tr>
+        <td class="nowrap"><b class="mono-n" style="font-size:.84rem">${esc(d.path)}</b></td>
+        <td class="small muted">${esc(d.cn)}</td>
+        <td class="num">${nf(d.files)}</td>
+        <td class="num">${d.md}</td>
+        <td class="num">${d.hasReadme ? "✓" : "—"}</td>
+        <td class="num">${d.hasAgents ? "✓" : "—"}</td>
+      </tr>`).join("") + "</tbody>";
+
+  /* ---- 阅读路径 ---- */
+  const P = D.paths;
+  const PC = { beginner: "#4cc9f0", developer: "#4ade80", thinking: "#a78bfa", agent: "#f472b6", faqi: "#fb923c" };
+  const PF = Viz.createFacets({
+    root: "#path-facets", host: "#paths", items: P,
+    dimensions: [
+      { key: "k", label: "路线", get: p => p.key,
+        values: P.map(p => ({ v: p.key, label: p.title.replace("路径", "").replace("读取", ""), color: PC[p.key] })) },
+    ],
+    render(list, host) {
+      host.innerHTML = list.map(p =>
+        `<div class="panel mb14" style="border-left:3px solid ${PC[p.key] || "var(--c-struct)"}">
+           <div class="row tight mb14">
+             <b style="font-size:1rem">${esc(p.title)}</b>
+             <span class="pill mono-n">${p.docs.length} 篇</span>
+             <span class="term tiny">reading_paths.${esc(p.key)}</span>
+           </div>
+           <div class="row tight" style="gap:6px">
+             ${p.docs.map((d, i) =>
+               `<span class="node sm plain" style="--node-c:${PC[p.key] || "var(--c-struct)"}">${esc(d)}</span>` +
+               (i < p.docs.length - 1 ? `<span class="arrow">→</span>` : "")).join("")}
+           </div>
+         </div>`).join("");
+    },
+  });
+
+  const totalDocs = [...new Set(D.paths.flatMap(p => p.docs))].length;
+  const dup = D.paths.flatMap(p => p.docs).length - totalDocs;
+  $("#paths").insertAdjacentHTML("beforebegin",
+    `<div class="note info">
+       <b>五条路线覆盖 ${totalDocs} 篇不同文档，共有 ${dup} 处交叉。</b>
+       同一条功法可能同时出现在新手路线和思维模型路线里——这是允许的，
+       因为路径是「面向读者的推荐顺序」，不是内容归属。
+       内容归属永远只有一个地方。
+     </div>`);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>结构与机制 · vibe-coding-cn 可视化</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="topbar" id="topbar"></header>
+
+<main class="wrap">
+  <div class="page-head">
+    <div class="kicker">Architecture</div>
+    <h1>结构与机制</h1>
+    <p>十棵内容树全部收在 <span class="term">.github/</span> 下，根目录只留入口文件。
+      每棵树有唯一职责、明确的「不写什么」，以及一个守着它的检查脚本。</p>
+  </div>
+
+  <section>
+    <h2><span class="n">01</span>目录树<span class="hint">点目录展开 / 收起 · 括号内为文件数与 Markdown 数</span></h2>
+    <div class="grid g2">
+      <div class="panel">
+        <div class="pt-head"><h3>.github/ 内容树</h3><span class="right" id="tree-total"></span></div>
+        <div class="tree" id="tree"></div>
+      </div>
+      <div>
+        <div class="panel mb14">
+          <div class="pt-head"><h3>根目录只剩什么</h3><span class="sub">平台入口，不放内容</span></div>
+          <div id="root-files"></div>
+        </div>
+        <div class="panel">
+          <div class="pt-head"><h3>为什么搬进 .github</h3></div>
+          <div class="quote">
+            「本目录既承载 GitHub 平台配置，也集中存放仓库的知识、工具和自动化内容。
+            仓库首页仍由根目录 <span class="term">README.md</span> 负责；本目录不放 <span class="term">README.md</span>，
+            避免覆盖 GitHub 的首页展示。」
+            <span class="src">.github/AGENTS.md</span>
+          </div>
+          <div class="small muted mt8">
+            这是<b>平台约束倒逼结构</b>的典型案例：GitHub 会用根 README 渲染仓库首页，
+            如果内容目录也放 README，首页展示权就会打架。于是内容整体下沉一层，入口留在顶层。
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">02</span>职责矩阵<span class="hint">每棵树写什么、不写什么、谁在守</span></h2>
+    <div class="scroll-x">
+      <table class="tbl" id="duty"></table>
+    </div>
+    <div class="note info mt14">
+      <b>读法：</b>「不写什么」这一列比「写什么」更重要——它是防重复的边界。
+      仓库里每一条重复内容，几乎都来自某个目录越界写了别的目录该写的东西。
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">03</span>内容流向<span class="hint">外部事实 → 可复用方法 → 可执行能力</span></h2>
+    <div class="panel">
+      <div class="flow" id="pipeline"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">04</span>边界与豁免<span class="hint">什么被排除在检查之外，以及谁在验证这个豁免</span></h2>
+    <div class="grid g2">
+      <div class="panel accent-research">
+        <div class="pt-head"><h3>被排除出全仓门禁的路径</h3></div>
+        <div id="excluded"></div>
+        <div class="small muted mt8">
+          这些是外部仓库的原始镜像（raw 事实层），保留原样比格式整齐更重要。
+          但豁免不是无人看守——边界本身有独立门禁。
+        </div>
+      </div>
+      <div class="panel accent-gate">
+        <div class="pt-head"><h3>谁在守边界</h3></div>
+        <div id="boundary-gates"></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">05</span>路径约定<span class="hint">迁移后最容易踩的三个坑</span></h2>
+    <div class="grid g3">
+      <div class="panel tight">
+        <div class="pt-head"><h3>① 引用要加前缀</h3></div>
+        <div class="small muted">从仓库根引用迁入目录，必须写 <span class="term">.github/docs/…</span>。</div>
+      </div>
+      <div class="panel tight">
+        <div class="pt-head"><h3>② 内部链接不加</h3></div>
+        <div class="small muted">迁入目录<b>内部</b>的相对链接保持原相对关系，重复加 <span class="term">.github/</span> 会断链。</div>
+      </div>
+      <div class="panel tight">
+        <div class="pt-head"><h3>③ 平台路径不能动</h3></div>
+        <div class="small muted"><span class="term">workflows/</span>、<span class="term">ISSUE_TEMPLATE/</span>、<span class="term">CODEOWNERS</span> 必须留在 GitHub 要求的位置。</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer">
+    <span>目录树与文件数来自实时扫描</span>
+    <span class="spacer"></span>
+    <span><a href="gates.html">→ 看门禁体系怎么守着这些边界</a></span>
+  </div>
+</main>
+
+<script src="assets/data.js"></script>
+<script src="assets/charts.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  const D = Viz.D, $ = Viz.$, esc = Viz.esc, nf = Viz.nf;
+  const T = D.tree;
+
+  /* ---- 目录树 ---- */
+  let uid = 0;
+  function renderTree(node, depth) {
+    const hasKids = node.kids && node.kids.length;
+    const id = "tn" + (uid++);
+    const info = (D.overview.dirs.find(d => d.label === node.name) || {});
+    const tip = info.cn ? ` title="${esc(info.cn)}"` : "";
+    let html = `<div class="tnode">
+      <div class="trow"${hasKids ? ` data-t="${id}"` : ""}${tip}>
+        <span class="tw">${hasKids ? "▾" : "·"}</span>
+        <span class="tn">${esc(node.name)}/</span>
+        ${info.tier ? `<span class="tc">${esc(info.tier)}</span>` : ""}
+        <span class="td">${nf(node.files)} 文件 · ${node.md} md</span>
+      </div>`;
+    if (hasKids) {
+      html += `<div class="tkids" id="${id}">${node.kids.map(k => renderTree(k, depth + 1)).join("")}</div>`;
+    }
+    return html + `</div>`;
+  }
+  $("#tree").innerHTML = renderTree(T, 0);
+  $("#tree-total").textContent = `${nf(T.files)} 文件 · ${T.md} md`;
+  Viz.$$("#tree .trow[data-t]").forEach(row => {
+    row.onclick = () => {
+      const kids = document.getElementById(row.dataset.t);
+      kids.classList.toggle("hidden");
+      row.querySelector(".tw").textContent = kids.classList.contains("hidden") ? "▸" : "▾";
+    };
+  });
+
+  /* ---- 根目录文件 ---- */
+  const rootRoles = {
+    "README.md": "人类首页 · GitHub 展示入口",
+    "AGENTS.md": "AI Agent 操作手册（全局）",
+    "llms.txt": "AI 助手短上下文入口",
+    "Makefile": "全部本地命令的唯一入口",
+    "LICENSE": "MIT 许可证",
+    "CONTRIBUTING.md": "贡献指南",
+    "CODE_OF_CONDUCT.md": "行为准则",
+    "CHANGELOG.md": "变更日志",
+    ".lychee.toml": "外部链接检查配置",
+  };
+  const rf = D.overview.rootFiles.concat([{ name: "Makefile", lines: 137 }, { name: "LICENSE", lines: 0 }]);
+  $("#root-files").innerHTML = rf.map(f =>
+    `<div class="di" style="grid-template-columns:150px 1fr">
+       <dt class="mono-n" style="font-size:.82rem">${esc(f.name)}</dt>
+       <dd class="small muted">${esc(rootRoles[f.name] || "")}</dd>
+     </div>`).join("");
+
+  /* ---- 职责矩阵 ---- */
+  const DUTY = [
+    ["docs/", "入门教程 + 方法正文", "不复制通用方法正文；不恢复已退役的独立哲学/方法目录", "check-doc-structure"],
+    ["docs/gongfa/", "可复用方法论、准则、模型的唯一正文", "不建第二维护源；不按篇数自动注册功法身份", "check-gongfa"],
+    ["research/", "外部对象的具体事实、raw 原始层与验证观察", "不另建方法正文副本", "check-research-raw"],
+    ["prompts/", "提示词库入口（指向云端表格）", "不在仓库内维护第二份提示词正文", "—"],
+    ["skills/", "可执行技能契约（SKILL.md + 脚本）", "不执行文中提示词、命令或高风险操作", "—"],
+    ["tools/", "工具、配置基线与 submodule 指针", "不把大型第三方源码复制进主仓库", "—"],
+    ["scripts/", "本地检查、目录生成与数据维护脚本", "不在脚本里联网；不执行被审程序", "make test"],
+    ["metadata/", "机器可读登记、分类、术语与重定向", "不确定的映射不许猜；不加自映射", "check-metadata"],
+    ["assets/", "静态资产、外部资源注册表、AI 引用语料", "不复制外部资源的所有权字段", "check-ai-citation"],
+    [".github/ 平台配置", "workflows、模板、CODEOWNERS、lint 配置", "不为迁就新路径改变 CI 触发条件或检查范围", "CI"],
+  ];
+  $("#duty").innerHTML =
+    `<thead><tr><th>目录</th><th>写什么</th><th>不写什么（边界）</th><th>守护者</th></tr></thead><tbody>` +
+    DUTY.map(([a, b, c, d]) =>
+      `<tr>
+         <td class="nowrap"><b class="mono-n" style="font-size:.84rem">${esc(a)}</b></td>
+         <td class="small">${esc(b)}</td>
+         <td class="small" style="color:var(--c-danger)">${esc(c)}</td>
+         <td class="nowrap"><span class="pill info mono-n" style="font-size:.72rem">${esc(d)}</span></td>
+       </tr>`).join("") + "</tbody>";
+
+  /* ---- 内容流向 ---- */
+  const G = D.gongfa, F = D.faqi;
+  const pipe = [
+    { label: "① 引入", sub: "外部世界", nodes: [
+      { t: nf(D.research.domains.length) + " 个研究对象", d: "对标仓库与外部源", c: "var(--c-research)" },
+      { t: "raw 原始事实层", d: "冻结快照 · 提交哈希 · 隐私边界", c: "var(--c-research)" },
+    ]},
+    { label: "② 提炼", sub: "事实 → 方法", nodes: [
+      { t: "研究分析", d: "analysis.md / deep-dive.md", c: "var(--c-research)" },
+      { t: "迁移综合", d: "对标拆解 → 改良迭代 → 可验证行动", c: "var(--c-gongfa)" },
+    ]},
+    { label: "③ 固化", sub: "方法 → 身份", nodes: [
+      { t: G.stats.collections + " 篇文集", d: "docs/gongfa/ 按问题导航", c: "var(--c-gongfa)" },
+      { t: G.stats.registered + " 条登记", d: "registry.json：ID + 内容版本 + 冻结来源", c: "var(--c-gongfa)" },
+      { t: nf(G.catalog.total) + " 行总表", d: "sync 脚本生成，禁止手改", c: "var(--c-faqi)" },
+    ]},
+    { label: "④ 使用", sub: "方法 → 动作", nodes: [
+      { t: "提示词", d: "prompts/ 一次性指令", c: "var(--c-ai)" },
+      { t: "技能", d: "skills/ 可复用执行契约", c: "var(--c-gate)" },
+      { t: F.totalItems + " 项法器", d: "工具与依赖，按重要性导航", c: "var(--c-faqi)" },
+    ]},
+    { label: "⑤ 校验", sub: "动作 → 证据", nodes: [
+      { t: D.gates.testCount + " 道门禁", d: "make test 串联", c: "var(--c-gate)" },
+      { t: "缺口登记", d: "缺条件/限制/预期结果 → missing_fields", c: "var(--c-warn)" },
+    ]},
+  ];
+  $("#pipeline").innerHTML = pipe.map(b =>
+    `<div class="flow-band">
+       <div class="fb-label">${esc(b.label)}<small>${esc(b.sub)}</small></div>
+       <div class="flow-nodes">${b.nodes.map(n =>
+         `<div class="node sm" style="--node-c:${n.c}"><b>${esc(n.t)}</b><span>${esc(n.d)}</span></div>`).join("")}</div>
+     </div>`).join("");
+
+  /* ---- 豁免路径 ---- */
+  const exc = D.gates.excludedFromLint;
+  $("#excluded").innerHTML = exc.length
+    ? exc.map(e => `<div class="di"><dt class="mono-n" style="font-size:.78rem">${esc(e)}</dt>
+        <dd class="small muted">${
+          e.includes("tools/external") ? "第三方 submodule 源码" :
+          e.includes("repository") ? "研究对象的 Git 工作树克隆" :
+          e.includes("facts") ? "外部源事实层登记" :
+          "外部源事实镜像（整仓保留原样）"}</dd></div>`).join("")
+    : `<div class="empty">Makefile 中未登记豁免路径</div>`;
+
+  const bGates = D.gates.targets.filter(t => ["check-source-facts", "check-research-raw", "check-wiki"].includes(t.name));
+  $("#boundary-gates").innerHTML = bGates.map(t =>
+    `<div class="di" style="grid-template-columns:180px 1fr">
+       <dt class="mono-n" style="font-size:.8rem">${esc(t.name)}</dt>
+       <dd class="small">${esc(t.guards)}</dd>
+     </div>`).join("") +
+    `<div class="note mt14 mb0 small">豁免的只有「排版格式」；<b>文件数、来源哈希、隐私边界</b>仍在逐个核对。</div>`;
+})();
+</script>
+</body>
+</html>

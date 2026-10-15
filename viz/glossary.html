@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>术语对照 · vibe-coding-cn 可视化</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="topbar" id="topbar"></header>
+
+<main class="wrap">
+  <div class="page-head">
+    <div class="kicker">Glossary</div>
+    <h1>术语对照</h1>
+    <p>这个项目大量借用修仙小说词汇命名（功法、法器、品级、魂魄……）。
+      它们<b>只是命名风格</b>，每个词背后都有严格的工程定义。
+      第一次读这个项目，建议先看这一页。</p>
+  </div>
+
+  <div class="note info">
+    <b>读法：</b>左列是你会看到的词，右列是它在仓库里的确切含义与存放位置。
+    修仙词不带来任何额外的技术承诺——「天阶」不代表更好用，只代表在这个项目的导航里排得更靠前。
+  </div>
+
+  <section>
+    <h2><span class="n">01</span>修仙词 → 它其实指什么</h2>
+    <div class="scroll-x"><table class="tbl" id="cultivation"></table></div>
+  </section>
+
+  <section>
+    <h2><span class="n">02</span>最容易搞混的六对词<span class="hint">每一对都是「分轴原则」的实例</span></h2>
+    <div class="grid g3" id="confusions"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">03</span>工程术语表<span class="hint">来自 <span class="term">metadata/glossary.yml</span></span></h2>
+    <div class="grid gauto" id="terms"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">04</span>阅读顺序建议<span class="hint">给第一次接触这个项目的人</span></h2>
+    <div class="panel">
+      <div class="row" style="gap:6px;align-items:center">
+        <span class="node sm" style="--node-c:var(--c-struct)">本页：认清词</span><span class="arrow">→</span>
+        <span class="node sm" style="--node-c:var(--c-struct)">总览：这是什么</span><span class="arrow">→</span>
+        <span class="node sm" style="--node-c:var(--c-gongfa)">设计思路：为什么这么长</span><span class="arrow">→</span>
+        <span class="node sm" style="--node-c:var(--c-research)">结构机制：东西在哪</span><span class="arrow">→</span>
+        <span class="node sm" style="--node-c:var(--c-gate)">门禁：怎么保证不烂</span>
+      </div>
+      <div class="small muted mt14 mb0">
+        想直接看内容资产，跳到<a href="gongfa.html">功法体系</a>、<a href="faqi.html">法器体系</a>和<a href="research.html">研究域</a>。
+      </div>
+    </div>
+  </section>
+
+  <div class="footer">
+    <span>工程术语来自 <span class="term">metadata/glossary.yml</span></span>
+    <span class="spacer"></span>
+    <span><a href="index.html">← 回到总览</a></span>
+  </div>
+</main>
+
+<script src="assets/data.js"></script>
+<script src="assets/charts.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  const D = Viz.D, $ = Viz.$, esc = Viz.esc, nf = Viz.nf;
+  const G = D.gongfa, F = D.faqi;
+
+  /* ---- 修仙词 ---- */
+  const CULT = [
+    ["功法", "可复用的方法论、准则、思维模型与流程。每条有唯一 ID + 内容版本，不是「一篇文章」。",
+      "docs/gongfa/ · metadata/gongfa/registry.json", "var(--c-gongfa)"],
+    ["法器", "Vibe Coding 流程里用到的工具、可调用入口或依赖类别；官方定义强调它不是某个统一产品类别。",
+      "metadata/faqi.json · docs/gongfa/faqi-system.md", "var(--c-faqi)"],
+    ["品级 · 四阶十二级", "效果评级量表：黄 / 玄 / 地 / 天四阶，每阶分初 / 中 / 高三级，共 12 档。",
+      "registry.json → vocabulary.tiers", "var(--c-gongfa)"],
+    ["重要性分级", "法器专用的<b>另一条轴</b>：该项工具在工作流中有多关键、能否被替代。与效果无关。",
+      "faqi.json → provisional_grade_assignments", "var(--c-faqi)"],
+    ["文集", "组织与阅读单位。一篇文集可能包含多条功法、术语和模板；<b>篇数不是功法数</b>。",
+      "docs/gongfa/*.md（共 " + G.stats.collections + " 篇）", "var(--c-struct)"],
+    ["登记", "把某条内容正式建档：分配 ID、绑定内容版本、冻结来源、记录历史意见。",
+      "registry.json → gongfa[" + G.stats.registered + "]", "var(--c-gongfa)"],
+    ["冻结来源", "不可变的原文快照：旧字节、捕获时间、Git 修订、选择器都不再改动。",
+      "metadata/gongfa/source-*.txt", "var(--c-warn)"],
+    ["初评", "专家判断的暂定品级，标记 provisional / expert_judgment，不冒称实验结论。",
+      "registry.json → grade_proposals[" + G.proposals.length + "]", "var(--c-warn)"],
+    ["正式评级", "需要独立任务合同、基线与可复核证据才能给出的结论。目前为零。",
+      "registry.json → assessments[" + G.stats.assessments + "]", "var(--c-danger)"],
+    ["总表", "由登记源生成的只读视图，人类用来浏览，机器用来核对。禁止手改。",
+      "metadata/gongfa/catalog.md · tools/faqi-catalog.md", "var(--c-faqi)"],
+    ["本体", "固定 BFO 主干的领域分类草案（V4），负责「类型」这一轴的唯一语义。",
+      "docs/gongfa/cultivation-ontology-taxonomy.md", "#a78bfa"],
+    ["道法术器", "四层协作框架：协作关系 → 抽象方法 → 工程流程 → 工具承载。",
+      "docs/gongfa/dao-fa-shu-qi.md", "var(--c-struct)"],
+    ["拼好码", "胶水编程的超集：优先复用成熟方案，用自研代码连接、编排、适配业务逻辑。",
+      "docs/gongfa/glue-coding.md", "var(--c-struct)"],
+  ];
+  $("#cultivation").innerHTML =
+    `<thead><tr><th>你会看到的词</th><th>它其实指什么</th><th>在哪里</th></tr></thead><tbody>` +
+    CULT.map(([w, d, p, c]) =>
+      `<tr>
+         <td class="nowrap"><b style="color:${c};font-size:.9rem">${esc(w)}</b></td>
+         <td class="small">${d}</td>
+         <td class="mono-n tiny faint nowrap">${esc(p)}</td>
+       </tr>`).join("") + "</tbody>";
+
+  /* ---- 易混词对 ---- */
+  const CONF = [
+    ["文集数 ≠ 功法数", G.stats.collections + " 篇文集", G.stats.registered + " 条登记功法",
+      "文集是阅读单位，功劳是身份单位；一篇可以含多条，一条也可以散在多篇里。"],
+    ["重要性 ≠ 效能", "重要性 " + F.totalItems + " 项已定", "效能评级 0 项",
+      "「在流程里有多关键」和「实际效果多好」是两条独立轴，前者不能推出后者。"],
+    ["初评 ≠ 正式评级", "初评 " + G.stats.registered + " 条", "正式评级 " + G.stats.assessments + " 条",
+      "初评是专家判断并带反证；正式评级要固定任务合同与可复核证据。"],
+    ["登记 ≠ 候选", "登记 " + G.stats.registered + " 条", "总表 " + nf(G.catalog.total) + " 行",
+      "总表里的多数是历史来源候选：没有独立身份、没有赋级、不自动去重。"],
+    ["类型 ≠ 品级", "4 种本体类型", "12 个品级档位",
+      "「这是什么」不决定「有多好」；类型横跨全部档位，不做父子继承。"],
+    ["未评级 ≠ 最低级", "未初评 = 空", "不补 0 或黄阶",
+      "没有证据就是没有结论，<b>不默认补成最低档</b>——补默认值本身就是一次造假。"],
+  ];
+  $("#confusions").innerHTML = CONF.map(([t, a, b, why]) =>
+    `<div class="panel" style="border-left:3px solid var(--c-warn)">
+       <div style="font-weight:650;font-size:.94rem;margin-bottom:10px">${esc(t)}</div>
+       <div class="row tight mb8">
+         <span class="pill" style="font-size:.78rem">${esc(a)}</span>
+         <span class="arrow">vs</span>
+         <span class="pill" style="font-size:.78rem">${esc(b)}</span>
+       </div>
+       <div class="tiny muted" style="line-height:1.55">${why}</div>
+     </div>`).join("");
+
+  /* ---- 工程术语 ---- */
+  $("#terms").innerHTML = D.glossary.terms.map(t =>
+    `<div class="panel tight flat">
+       <div class="row tight mb8">
+         <b style="font-size:.92rem">${esc(t.zh)}</b>
+         <span class="stat-c"></span>
+         <span class="spacer"></span>
+         <span class="term tiny">${esc(t.key)}</span>
+       </div>
+       <div class="small muted" style="line-height:1.55">${esc(t.desc)}</div>
+     </div>`).join("");
+})();
+</script>
+</body>
+</html>

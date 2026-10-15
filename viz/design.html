@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>设计思路 · vibe-coding-cn 可视化</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="topbar" id="topbar"></header>
+
+<main class="wrap">
+  <div class="page-head">
+    <div class="kicker">Design Principles</div>
+    <h1>这个项目的设计思路</h1>
+    <p>一句话概括：<b>它把文档当成软件系统来治理</b>。有单一数据源、有只读生成视图、有版本身份、
+      有可执行门禁、有边界契约。下面 8 条原则是这套机制的全部骨架，每条都附仓库里的真实证据。</p>
+  </div>
+
+  <section>
+    <h2><span class="n">00</span>八条原则总览<span class="hint">点卡片跳到详情</span></h2>
+    <div class="grid g4" id="principle-nav"></div>
+    <div class="note info mt14">
+      <b>为什么这 8 条值得讲：</b>它们不是"文档规范"，而是可验证的系统约束。每一条都能在仓库里找到一个
+      脚本、一个 JSON 字段或一次提交来证明它真的在生效——而不是写在纸上。
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">01–08</span>逐条展开</h2>
+    <div class="grid g2" id="principles"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">09</span>这 8 条原则的三种读者效果<span class="hint">同一套内容，三种读法</span></h2>
+    <div class="panel">
+      <div class="compare">
+        <div>
+          <h4>👤 人类读</h4>
+          <ul>
+            <li>先看 <span class="term">README.md</span>：定位、入口、徽章</li>
+            <li>再看 <span class="term">docs/gongfa/README.md</span>：按「当前问题」选方法</li>
+            <li>需要实例走 <span class="term">getting-started/</span></li>
+            <li>从不被要求读 JSON</li>
+          </ul>
+        </div>
+        <div>
+          <h4>🤖 AI 读</h4>
+          <ul>
+            <li>先读根 <span class="term">AGENTS.md</span>：操作手册与禁止事项</li>
+            <li>进入目录读该目录的 <span class="term">AGENTS.md</span>：局部边界与验证命令</li>
+            <li>改完必须跑对应 <span class="term">make check-*</span></li>
+            <li>不确定的东西用 TODO 标注，<b>不允许猜</b></li>
+          </ul>
+        </div>
+        <div>
+          <h4>⚙️ 机器读</h4>
+          <ul>
+            <li><span class="term">metadata/*.json</span>：登记、等级、来源、SHA</li>
+            <li><span class="term">taxonomy.yml</span>：路径与角色映射</li>
+            <li><span class="term">llms.txt</span> / <span class="term">llms-full.txt</span>：AI 索引</li>
+            <li>生成视图（catalog）禁止手改</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer">
+    <span>证据均可在仓库中按路径核对</span>
+    <span class="spacer"></span>
+    <span><a href="roles.html">→ 展开三种读者对比</a></span>
+  </div>
+</main>
+
+<script src="assets/data.js"></script>
+<script src="assets/charts.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  const D = Viz.D, $ = Viz.$, esc = Viz.esc, nf = Viz.nf;
+  const G = D.gongfa, F = D.faqi;
+
+  const gitdir = ".github/";
+  const P = [
+    {
+      n: "01", t: "唯一正文源", c: "var(--c-struct)",
+      claim: "一种内容只有一个可编辑位置，其他地方只能链接，不能复制。",
+      problem: "同一段方法被三个地方各写一遍，三个月后三份互相矛盾，谁也说不清哪个是对的。",
+      how: "方法正文统一进 <span class='term'>" + gitdir + "docs/gongfa/</span>；首页、入门教程、研究域只保留导航和实例，完整正文靠链接。已退役的旧目录不得恢复成正文或兼容壳。",
+      evidence: [
+        "<b>取消首页栏目</b>：根 README 不再展示「六条核心命题」等旧栏目，只留历史锚点做跳转兼容。",
+        "<b>入口收口</b>：研究回填、模板、AI 摘要各自定职，正文只有一个维护点。",
+        "<b>反例写在文档里</b>：<span class='term'>AGENTS.md</span> 明确禁止「恢复旧目录 / 建可编辑副本 / 建永久转发页」。",
+      ],
+      anti: "如果违反：同一句话出现在 README、Wiki、AI 摘要三处，改一处就产生两个真相。",
+    },
+    {
+      n: "02", t: "可编辑源 vs 只读生成视图", c: "var(--c-faqi)",
+      claim: "人能改的只有一个 JSON；人看到的表格、Excel、徽章全部由脚本生成。",
+      problem: "手写表格和手写 JSON 双维护，数据量一大必然对不上，而且没人知道以哪个为准。",
+      how: "<span class='term'>metadata/gongfa/registry.json</span> 与 <span class='term'>metadata/faqi.json</span> 是唯一可编辑源；<span class='term'>sync-*.py</span> 生成视图，<span class='term'>check-*.py</span> 只读校验，两者成对出现在 Makefile 里。",
+      evidence: [
+        "<b>功法</b>：" + G.stats.registered + " 条登记 → 总表 " + nf(G.catalog.total) + " 行 Markdown + 一份 Excel。",
+        "<b>法器</b>：" + F.totalItems + " 项 → <span class='term'>tools/faqi-catalog.md</span>，文件头写死 <span class='term'>generated:</span> 标记。",
+        "<b>双向校验</b>：<span class='term'>check-gongfa-catalog</span> 会比对 Markdown 与 Excel 是否一致、来源 SHA 是否漂移。",
+      ],
+      anti: "如果违反：生成物被手改一次，下一次 sync 就会静默覆盖掉人工修改。",
+    },
+    {
+      n: "03", t: "身份 = ID + 内容版本", c: "var(--c-gongfa)",
+      claim: "换个路径、改个排版，不产生新身份；语义变了才产生新版本。",
+      problem: "文件一移动，所有引用失效、历史对不上，无法回答「这条内容什么时候被谁改过」。",
+      how: "功法身份由 <span class='term'>ID + content_version</span> 绑定；来源由 Git 修订 + 冻结快照 + 选择器共同绑定。路径只是「当前导航」，可以跟着目录迁移更新。",
+      evidence: [
+        "<b>全量登记</b>：" + G.stats.registered + " 条全部为 <span class='term'>r1</span>，没有被路径变化刷成新版本。",
+        "<b>来源锁定</b>：" + G.stats.sources + " 个冻结来源，其中 12 个绑定同一 Git 修订 <span class='term'>81fc7ae</span>。",
+        "<b>刚验证过</b>：本次仓库把内容整体搬进 <span class='term'>.github/</span>，来源 <span class='term'>path</span> 全部更新，但 git 修订与内容版本一个都没动。",
+      ],
+      anti: "如果违反：搬一次目录就丢掉全部血统，历史记录变成一堆断链。",
+    },
+    {
+      n: "04", t: "分轴：不给同一件事混维度", c: "var(--c-warn)",
+      claim: "「是什么」「有多重要」「效果多好」是三条独立的轴，任何一条都不能冒充另一条。",
+      problem: "把「工具很流行」当成「工具效果好」，把「篇数多」当成「方法多」，最后所有结论都不可信。",
+      how: "类型只归本体主文，品级只归评级记录，重要性只归法器暂定分级。三条轴各自有字段、各自有校验，互不推导。",
+      evidence: [
+        "<b>类型 ≠ 品级</b>：4 种本体类型（方法规范 " + (G.stats.typeDist["method-specification"] || 0) +
+          " / 准则分配 " + (G.stats.typeDist["normative-allocation-content"] || 0) +
+          " / 道论 " + (G.stats.typeDist["dao-content"] || 0) +
+          " / 解释 " + (G.stats.typeDist["explanatory-content"] || 0) + "）横跨 12 个品级，类型不决定等级。",
+        "<b>文集 ≠ 功法</b>：" + G.stats.collections + " 篇文集 ≠ " + G.stats.registered + " 条登记，篇数不做计数口径。",
+        "<b>登记 ≠ 候选</b>：总表 " + nf(G.catalog.total) + " 行里只有 " + G.stats.registered + " 条已登记，其余是来源候选，不自动去重赋级。",
+        "<b>法器双轴</b>：重要性已定 " + F.totalItems + " 项，而效能评级量规仍是 <span class='term'>draft</span>，正式结论为零。",
+      ],
+      anti: "如果违反：一页「排行榜」会把导航性判断伪装成效果结论。",
+    },
+    {
+      n: "05", t: "门禁即契约", c: "var(--c-gate)",
+      claim: "每条规则背后都有一个脚本在执行；写在文档里的约定不算数，跑得起来的才算。",
+      problem: "「记得同步更新文档」这种约定，在人和 AI 手里都会失效——尤其是 AI，它不记得。",
+      how: "根 <span class='term'>Makefile</span> 是唯一命令入口；<span class='term'>make test</span> 串起全部硬门禁。写操作（sync）与读校验（check）分开，脚本离线运行、不联网。",
+      evidence: [
+        "<b>规模</b>：" + D.gates.targets.length + " 个 Make 目标，" + D.gates.testCount + " 个被 <span class='term'>make test</span> 串联，背后是 " + D.gates.scripts.length + " 个 Python 脚本。",
+        "<b>覆盖</b>：格式、结构、metadata、功法、法器、AI 引用、外部资源、研究事实镜像各有专属检查。",
+        "<b>可复现</b>：CI 与本地跑同一批脚本，仓库自己声明「没有构建步骤」。",
+      ],
+      anti: "如果违反：AI 每次都能「改好了」，但没人能证明它没改坏别的。",
+    },
+    {
+      n: "06", t: "同一份内容，三种读者入口", c: "var(--c-ai)",
+      claim: "人类、AI、机器各有自己的入口，共享同一份事实，而不是维护三份内容。",
+      problem: "给 AI 看的说明散落在提示词里，人看不到；人改的规则 AI 不知道，协作全靠口头传递。",
+      how: "<span class='term'>README.md</span> 面向人；每个目录的 <span class='term'>AGENTS.md</span> 面向 AI（含禁止事项与验证命令）；<span class='term'>metadata/</span> 与 <span class='term'>llms.txt</span> 面向机器。",
+      evidence: [
+        "<b>AGENTS.md 分级</b>：根一份管全局，docs / research / skills / scripts / metadata / tools 各一份管局部。",
+        "<b>双重索引</b>：<span class='term'>llms.txt</span> 短上下文，<span class='term'>llms-full.txt</span> 完整上下文，都指向同一批真实文件。",
+        "<b>结构契约</b>：docs 的 README 有固定块顺序（字多不看 → 快速导航 → 目录 → 使用方式），由脚本校验。",
+      ],
+      anti: "如果违反：AI 需要靠猜来理解项目，人会不断重复解释同样的规则。",
+    },
+    {
+      n: "07", t: "诚实边界：没做就写没做", c: "var(--c-danger)",
+      claim: "未校准就标 draft，没有正式评级就写 0，缺字段就登记缺口，不拿常识补全。",
+      problem: "系统最容易在「看起来完成了」的地方骗人：草案被当成定稿，初评被读成实验结论。",
+      how: "规约有 <span class='term'>status</span> 字段；证据有 <span class='term'>limits</span> 开关；样本缺项写进 <span class='term'>missing_fields</span>，不允许用常识补。",
+      evidence: [
+        "<b>评级规约</b>：<span class='term'>" + G.policy.id + "@" + G.policy.version + "</span> 状态为 <b>" + G.policy.status + "</b>，因此正式评级记录数为 <b>" + G.stats.assessments + "</b>。",
+        "<b>法器自陈</b>：独立审查 " + (F.limits.independent_review ? "✅" : "❌") +
+          " · 运行验证 " + (F.limits.runtime_verified ? "✅" : "❌") +
+          " · 效果验证 " + (F.limits.effectiveness_verified ? "✅" : "❌") +
+          " · 许可批准 " + (F.limits.license_approved ? "✅" : "❌") + "。",
+        "<b>缺口公开</b>：" + G.stats.registered + " 条登记中，缺「限制」字段 " + (G.stats.missingFieldCounts.limitations || 0) +
+          " 条、缺「待答问题」" + (G.stats.missingFieldCounts.questions || 0) + " 条，如实列出而不是补写。",
+        "<b>门禁豁免也登记</b>：3 个外部源镜像被明确排除出全仓检查，边界由 <span class='term'>check-source-facts</span> 独立验证。",
+      ],
+      anti: "如果违反：读者会把「我们整理过」误读成「我们验证过」——这是文档系统最贵的谎言。",
+    },
+    {
+      n: "08", t: "平台约束倒逼结构", c: "var(--c-research)",
+      claim: "把内容收进 <span class='term'>.github/</span>，但那里偏偏不放 README。",
+      problem: "内容目录和平台配置混在一起时，GitHub 首页会被某个子目录的 README 抢走展示权。",
+      how: "十棵树整体迁入 <span class='term'>.github/</span>，根目录只留入口文件；<span class='term'>.github/AGENTS.md</span> 写明「本目录不放 README.md，避免覆盖首页展示」。",
+      evidence: [
+        "<b>根目录收敛</b>：只剩 README、AGENTS、Makefile、llms.txt 和 LICENSE / 贡献类文件共 " + D.overview.rootFiles.length + " 项。",
+        "<b>平台路径必须留在原位</b>：workflows、ISSUE_TEMPLATE、CODEOWNERS 仍按 GitHub 要求的位置存放。",
+        "<b>迁移有代价意识</b>：相对链接保持相对关系、不重复加前缀；历史路径进 <span class='term'>redirects.yml</span> 而不是建转发页。",
+      ],
+      anti: "如果违反：要么首页被覆盖，要么平台功能失效——这是目录规划里最容易被忽略的约束。",
+    },
+  ];
+
+  $("#principle-nav").innerHTML = P.map(p =>
+    `<a href="#p${p.n}" class="panel tight" style="border-left:3px solid ${p.c};display:block;color:inherit">
+       <div class="mono-n tiny faint">${p.n}</div>
+       <div style="font-weight:650;font-size:.92rem;margin-top:2px">${esc(p.t)}</div>
+     </a>`).join("");
+
+  $("#principles").innerHTML = P.map(p =>
+    `<article class="principle" id="p${p.n}" style="--pc:${p.c}">
+       <div class="ph">
+         <span class="pn">${p.n}</span>
+         <h3>${p.t}</h3>
+       </div>
+       <div class="pb">
+         <div class="claim"><b style="color:${p.c}">主张 · </b>${p.claim}</div>
+         <div class="block">
+           <div class="lbl">它解决什么问题</div>
+           <div class="muted">${p.problem}</div>
+         </div>
+         <div class="block">
+           <div class="lbl">怎么做的</div>
+           <div>${p.how}</div>
+         </div>
+         <div class="evidence">
+           <div class="lbl" style="color:${p.c};border-color:${p.c}">仓库里的证据</div>
+           ${p.evidence.map(e => `<span class="ev">· ${e}</span>`).join("")}
+         </div>
+         <div class="block hidden-in-demo">
+           <div class="lbl">反例</div>
+           <div class="small" style="color:var(--c-danger)">${p.anti}</div>
+         </div>
+       </div>
+     </article>`).join("");
+})();
+</script>
+</body>
+</html>

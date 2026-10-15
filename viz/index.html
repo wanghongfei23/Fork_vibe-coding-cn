@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>项目总览 · vibe-coding-cn 可视化</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="topbar" id="topbar"></header>
+
+<main class="wrap">
+  <div class="page-head">
+    <div class="kicker">Overview</div>
+    <h1>vibe-coding-cn 项目总览</h1>
+    <p>中文 Vibe Coding 从入门到精通教程。不是 Prompt 集合，而是一套把「想法 → 可运行产品」变成
+      <b>可审计流水线</b>的知识库 + 资产库 + 自校验工具链。</p>
+  </div>
+
+  <section>
+    <h2><span class="n">01</span>规模<span class="hint">数据来自 <span class="term">viz/build/extract.py</span> 实时扫描</span></h2>
+    <div class="grid g4" id="stats"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">02</span>内容地图<span class="hint">四层职责，单向流动</span></h2>
+    <div class="panel">
+      <div class="flow" id="map"></div>
+      <div class="note info mt14 mb0">
+        <b>关键约束：</b>每一层只有一个可编辑位置。上层不能被下层复制成第二份正文——
+        <span class="term">docs/gongfa/</span> 是方法正文的唯一源，<span class="term">research/</span> 只放外部事实，
+        其他目录通过链接引用而非拷贝。
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">03</span>十个内容树<span class="hint">方块面积正比于文件数 · 悬停看职责</span></h2>
+    <div class="panel">
+      <div id="bubbles"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">04</span>七个入口<span class="hint">按你想看的东西选</span></h2>
+    <div class="grid gauto" id="portal"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">05</span>基本事实</h2>
+    <div class="grid g2">
+      <div class="panel">
+        <div class="pt-head"><h3>仓库身份</h3></div>
+        <dl class="deflist" id="repo-facts"></dl>
+      </div>
+      <div class="panel">
+        <div class="pt-head"><h3>关键文件</h3><span class="sub">行数</span></div>
+        <div id="keyfiles"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer">
+    <span>生成于 <span class="mono-n" id="gen-at"></span></span>
+    <span class="spacer"></span>
+    <span>数据源：<span class="term" id="head-ref"></span></span>
+  </div>
+</main>
+
+<script src="assets/data.js"></script>
+<script src="assets/charts.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  const D = Viz.D, $ = Viz.$, esc = Viz.esc, nf = Viz.nf;
+  const G = D.gongfa, F = D.faqi, O = D.overview;
+
+  /* 规模 */
+  const stats = [
+    { v: nf(O.totals.files), l: "受管文件", x: "8 个顶层内容树（docs 下另分 2 个子区）", c: "var(--c-struct)" },
+    { v: nf(O.totals.md), l: "Markdown 文档", x: "知识的实际载体", c: "var(--c-struct)" },
+    { v: G.stats.registered, l: "功法登记条目", x: `另有 ${G.catalog.total - G.stats.registered} 条来源候选未入登记`, c: "var(--c-gongfa)" },
+    { v: F.totalItems, l: "法器条目", x: "重要性已分级，效能未评", c: "var(--c-faqi)" },
+    { v: D.research.domains.length, l: "研究对象目录", x: `含 ${D.research.domains.filter(d => d.kind === 'mirror').length} 个外部源镜像`, c: "var(--c-research)" },
+    { v: D.gates.targets.length, l: "Make 目标", x: `make test 串联 ${D.gates.testCount} 个门禁`, c: "var(--c-gate)" },
+    { v: D.gates.scripts.length, l: "检查脚本", x: "Python 3，离线运行", c: "var(--c-gate)" },
+    { v: nf(D.meta.commits), l: "提交数", x: "分支 " + D.meta.branch, c: "var(--c-ai)" },
+  ];
+  $("#stats").innerHTML = stats.map(s =>
+    `<div class="stat" style="--stat-c:${s.c}">
+       <span class="v">${s.v}</span><span class="l">${esc(s.l)}</span><span class="x">${esc(s.x)}</span>
+     </div>`).join("");
+
+  /* 内容地图 */
+  const map = [
+    { label: "事实层", sub: "外部世界", nodes: [
+      { t: "research/", d: "研究对象 · raw 原始事实 · 冻结镜像", c: "var(--c-research)" },
+    ]},
+    { label: "知识层", sub: "可复用正文", nodes: [
+      { t: "docs/getting-started/", d: "上手实例与配置", c: "var(--c-struct)" },
+      { t: "docs/gongfa/", d: "方法 · 准则 · 模型 · 法器说明", c: "var(--c-gongfa)" },
+    ]},
+    { label: "指令层", sub: "给 AI 的话", nodes: [
+      { t: "prompts/", d: "提示词资产（云端表格）", c: "var(--c-struct)" },
+      { t: "AGENTS.md ×N", d: "每个目录的 Agent 操作规则", c: "var(--c-ai)" },
+    ]},
+    { label: "能力层", sub: "可执行", nodes: [
+      { t: "skills/", d: "SKILL.md + 脚本 + 参考", c: "var(--c-gate)" },
+      { t: "tools/", d: "转换器 · 配置 · submodule", c: "var(--c-gate)" },
+    ]},
+    { label: "机器层", sub: "单一数据源与门禁", nodes: [
+      { t: "metadata/", d: "登记 JSON · 分类 · 术语 · 重定向", c: "var(--c-faqi)" },
+      { t: "assets/", d: "AI 引用语料 · 外部资源注册表", c: "var(--c-faqi)" },
+      { t: "scripts/", d: `${D.gates.scripts.length} 个检查与生成脚本`, c: "var(--c-faqi)" },
+    ]},
+  ];
+  $("#map").innerHTML = map.map(b =>
+    `<div class="flow-band">
+       <div class="fb-label">${esc(b.label)}<small>${esc(b.sub)}</small></div>
+       <div class="flow-nodes">
+         ${b.nodes.map(n => `<div class="node" style="--node-c:${n.c}"><b>${esc(n.t)}</b><span>${esc(n.d)}</span></div>`).join("")}
+       </div>
+     </div>`).join("");
+
+  /* 目录气泡（排除 docs 的两个子区，避免与父目录重复计数） */
+  const bubbleDirs = O.dirs.filter(d => d.path.split("/").length <= 2);
+  Charts.bubbles("#bubbles", bubbleDirs.map(d => ({
+    label: d.label, value: d.files, color: {
+      "知识": "var(--c-struct)", "事实": "var(--c-research)", "指令": "var(--c-ai)",
+      "能力": "var(--c-gate)", "机器": "var(--c-faqi)",
+    }[d.tier] || "var(--c-struct)",
+    sub: d.cn + " · " + d.md + " 篇 Markdown",
+  })), { caption: "方块面积正比于该树下的文件总数（含子目录与外部依赖）。tools/ 体积最大是因为 submodule 指针固定了 tmux、skills 等外部仓库。" });
+
+  /* 页面入口 */
+  const portal = [
+    ["design.html", "设计思路", "8 条原则，每条配仓库里的真实证据", "var(--c-gongfa)", "⭐ 讲这条主线"],
+    ["architecture.html", "结构机制", "内容怎么流动、边界在哪、为什么搬到 .github", "var(--c-struct)", ""],
+    ["gongfa.html", "功法体系", `${G.stats.registered} 条登记 × 四阶十二级 × ${G.stats.collections} 篇文集`, "var(--c-gongfa)", ""],
+    ["faqi.html", "法器体系", `${F.totalItems} 项工具与依赖，以及「同一份数据四种数法」`, "var(--c-faqi)", ""],
+    ["research.html", "研究域", `${D.research.domains.length} 个目录：对标、事实、镜像三类`, "var(--c-research)", ""],
+    ["gates.html", "质量门禁", `${D.gates.targets.length} 个目标各守什么不变量`, "var(--c-gate)", ""],
+    ["roles.html", "三种读者", "人类 / AI / 机器看到的是不同的入口", "var(--c-ai)", ""],
+    ["glossary.html", "术语对照", "修仙词 ↔ 工程概念，新生先看这页", "var(--c-warn)", "建议先看"],
+  ];
+  $("#portal").innerHTML = portal.map(([f, t, d, c, badge]) =>
+    `<a href="${f}" class="panel" style="border-left:3px solid ${c};display:block;color:inherit">
+       <div class="row tight mb8">
+         <b style="font-size:.98rem">${esc(t)}</b>
+         ${badge ? `<span class="pill" style="background:color-mix(in srgb,${c} 16%,transparent);color:${c}">${esc(badge)}</span>` : ""}
+       </div>
+       <div class="small muted">${esc(d)}</div>
+     </a>`).join("");
+
+  /* 仓库身份 */
+  const facts = [
+    ["仓库", D.meta.repo],
+    ["默认分支", D.meta.branch],
+    ["最新提交", `${D.meta.head} · ${D.meta.headSubject.slice(0, 46)}`],
+    ["许可证", "MIT"],
+    ["构建步骤", "无（文档与知识库项目）"],
+    ["验证入口", "make test"],
+    ["功法登记源", "metadata/gongfa/registry.json"],
+    ["法器登记源", "metadata/faqi.json"],
+  ];
+  $("#repo-facts").innerHTML = facts.map(([k, v]) =>
+    `<div class="di"><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("");
+
+  /* 关键文件 */
+  const maxL = Math.max(...O.keyFiles.map(k => k.lines));
+  $("#keyfiles").innerHTML = O.keyFiles.map(k =>
+    `<div class="bar-row" title="${esc(k.role)}">
+       <span class="bl">${esc(k.path.split("/").pop())}</span>
+       <span class="bt"><span class="bf" style="width:${(k.lines / maxL * 100).toFixed(1)}%;--bar-c:var(--c-struct)"></span></span>
+       <span class="bv">${k.lines}</span>
+     </div>`).join("");
+
+  $("#gen-at").textContent = (D.meta.generatedAt || "").replace("T", " ").slice(0, 16);
+  $("#head-ref").textContent = D.meta.head;
+})();
+</script>
+</body>
+</html>

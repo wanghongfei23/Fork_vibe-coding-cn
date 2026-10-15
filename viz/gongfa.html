@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>功法体系 · vibe-coding-cn 可视化</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="topbar" id="topbar"></header>
+
+<main class="wrap">
+  <div class="page-head">
+    <div class="kicker">Gongfa Registry</div>
+    <h1>功法体系</h1>
+    <p>仓库把可复用的方法论、准则、思维模型看成有<b>身份</b>的对象：每条有唯一 ID、内容版本、冻结来源，
+      以及一份人工初评——但<b>没有</b>正式效果评级。下面这张视图把登记、来源、分类和缺口全部摊开。</p>
+  </div>
+
+  <section>
+    <h2><span class="n">01</span>四个数字要分清<span class="hint">它们不是同一个东西，混起来就是口径错误</span></h2>
+    <div class="grid g4" id="keynums"></div>
+    <div class="note mt14">
+      <b>总表有 <span id="cat-total">—</span> 行，但只有 <span id="cat-reg">—</span> 条是登记的。</b>
+      其余是历史来源候选——没有入登记库、没有独立身份。
+      另外「<b>0 条正式评级</b>」不是因为没评，而是因为评级规约仍是 <b>draft</b>，阈值未校准，
+      所以按设计不产出正式结论。
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">02</span>四阶十二级分布<span class="hint">格子深浅 = 该档登记条数</span></h2>
+    <div class="grid g3">
+      <div class="panel" style="grid-column:span 1">
+        <div class="pt-head"><h3>登记条目 × 品级</h3><span class="sub">共 <span id="g-total">—</span> 条</span></div>
+        <div id="tier-matrix"></div>
+      </div>
+      <div class="panel">
+        <div class="pt-head"><h3>类型分布</h3><span class="sub">本体主类</span></div>
+        <div class="donut-wrap" id="type-donut"></div>
+      </div>
+      <div class="panel">
+        <div class="pt-head"><h3>缺口分布</h3><span class="sub">声明缺字段的条目数</span></div>
+        <div id="missing-bars"></div>
+        <div class="tiny faint mt8">仓库不拿常识补空缺：原文没写条件、限制或预期结果，就登记为缺口。</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">03</span>登记条目浏览器<span class="hint">四个分面交叉筛选 · 支持关键词</span></h2>
+    <div class="facets" id="facets"></div>
+    <div class="grid gauto" id="entries"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">04</span>文集：组织单位 ≠ 身份单位<span class="hint">37 篇按用途分 5 组</span></h2>
+    <div class="panel">
+      <div class="row mb14">
+        <span class="pill">37 篇文集</span><span class="arrow">≠</span><span class="pill info">79 条登记功法</span>
+        <span class="small muted">一篇文集可能包含多条功法、术语和模板；反过来，一条功法也可能散在多篇里。</span>
+      </div>
+      <div id="collections"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">05</span>冻结来源与初评批次</h2>
+    <div class="grid g2">
+      <div class="panel">
+        <div class="pt-head"><h3>冻结来源</h3><span class="sub">13 个不可变快照</span></div>
+        <div class="scroll-x"><table class="tbl compact" id="sources"></table></div>
+        <div class="tiny faint mt8">来源绑定 Git 修订 + 快照 SHA + 选择器；路径只是「当前导航」，可以随目录迁移更新而身份不变。</div>
+      </div>
+      <div class="panel">
+        <div class="pt-head"><h3>人工初评批次</h3><span class="sub">provisional / expert_judgment</span></div>
+        <div id="proposals"></div>
+        <div class="note danger mt14 mb0 small">
+          <b>初评不是实验结论。</b>标记为 <span class="term">provisional/expert_judgment</span>，
+          绑定内容摘要与反证，不冒称实测评级。
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer">
+    <span>来源：<span class="term">metadata/gongfa/registry.json</span> · <span class="term">catalog.md</span></span>
+    <span class="spacer"></span>
+    <span><a href="faqi.html">→ 法器体系（另一条独立轴）</a></span>
+  </div>
+</main>
+
+<script src="assets/data.js"></script>
+<script src="assets/charts.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  const D = Viz.D, $ = Viz.$, esc = Viz.esc, nf = Viz.nf;
+  const G = D.gongfa, S = G.stats;
+
+  const TIER_C = { tian: "#f0abfc", di: "#fbbf24", xuan: "#60a5fa", huang: "#94a3b8" };
+
+  /* ---- 四个数字 ---- */
+  const nums = [
+    { v: S.collections, l: "篇文集", x: "docs/gongfa/ 的 Markdown 文件", c: "var(--c-struct)" },
+    { v: S.registered, l: "条登记功法", x: "有 ID、内容版本与冻结来源", c: "var(--c-gongfa)" },
+    { v: nf(G.catalog.total), l: "行总表记录", x: "含未入登记库的来源候选", c: "var(--c-faqi)" },
+    { v: S.assessments, l: "条正式评级", x: "规约 draft，按设计不产出", c: "var(--c-danger)" },
+  ];
+  $("#keynums").innerHTML = nums.map(n =>
+    `<div class="stat" style="--stat-c:${n.c}"><span class="v">${n.v}</span>
+      <span class="l">${esc(n.l)}</span><span class="x">${esc(n.x)}</span></div>`).join("");
+  $("#cat-total").textContent = nf(G.catalog.total);
+  $("#cat-reg").textContent = S.registered;
+  $("#g-total").textContent = S.registered;
+
+  /* ---- 四阶十二级 ---- */
+  Charts.tierMatrix("#tier-matrix", G.vocabulary.tiers, S.gradeDist, { tierColors: TIER_C });
+
+  /* ---- 类型环形 ---- */
+  Charts.donut("#type-donut", Object.entries(S.typeDist).map(([k, v]) => ({
+    label: (G.entries.find(e => e.type === k) || {}).typeZh || k,
+    value: v,
+    color: { "method-specification": "#a78bfa", "normative-allocation-content": "#4cc9f0",
+             "dao-content": "#fbbf24", "explanatory-content": "#4ade80" }[k] || "#94a3b8",
+  })), { size: 150, centerValue: S.registered, centerLabel: "登记", legend: true });
+
+  /* ---- 缺口 ---- */
+  const mf = S.missingFieldCounts;
+  const MF_ZH = { conditions: "条件", limitations: "限制", questions: "待答问题", expected_outcomes: "预期结果" };
+  Charts.bars("#missing-bars", Object.entries(mf).sort((a, b) => b[1] - a[1]).map(([k, v]) => ({
+    label: MF_ZH[k] || k, value: v, color: "var(--c-warn)",
+  })));
+
+  /* ---- 分面 ---- */
+  const allMissing = ["conditions", "limitations", "questions", "expected_outcomes"];
+  Viz.createFacets({
+    root: "#facets", host: "#entries", items: G.entries,
+    search: (e, q) => (e.name + e.summary + e.problem + e.taskFamily).toLowerCase().includes(q),
+    searchPlaceholder: "按名称、摘要或任务族搜索 79 条登记…",
+    dimensions: [
+      { key: "tier", label: "阶", get: e => e.grade ? e.grade.split("-")[0] : "none",
+        values: [
+          { v: "tian", label: "天阶", color: TIER_C.tian },
+          { v: "di", label: "地阶", color: TIER_C.di },
+          { v: "xuan", label: "玄阶", color: TIER_C.xuan },
+          { v: "huang", label: "黄阶", color: TIER_C.huang },
+        ]},
+      { key: "type", label: "类型", get: e => e.type,
+        values: Object.keys(S.typeDist).map(k => ({
+          v: k, label: (G.entries.find(e => e.type === k) || {}).typeZh || k,
+        }))},
+      { key: "missing", label: "缺口", get: e => e.missing,
+        values: allMissing.map(k => ({ v: k, label: MF_ZH[k] }))},
+      { key: "batch", label: "批次", get: e => e.batch,
+        values: G.proposals.map(p => ({
+          v: p.id, label: p.id.includes("expansion") ? "仓内扩收批" : "作者初始批",
+        }))},
+    ],
+    render(items, host) {
+      host.innerHTML = items.map(e => {
+        const tier = e.grade ? e.grade.split("-")[0] : "none";
+        const seg = e.grade ? ({ advanced: "高级", intermediate: "中级", initial: "初级" }[e.grade.split("-")[1]] || "") : "";
+        const tierName = ({ tian: "天", di: "地", xuan: "玄", huang: "黄" }[tier] || "");
+        return `<div class="entry t-${tier}">
+          <div class="eh">
+            <span class="en">${esc(e.name)}</span>
+            <span class="tag ${tier}">${tierName}阶${seg}</span>
+          </div>
+          ${e.summary ? `<div class="es">${esc(e.summary)}</div>` : ""}
+          <div class="em">
+            <span class="pill">${esc(e.typeZh)}</span>
+            <span class="pill mono-n" title="功法身份 = ID + 内容版本">${esc(e.id.replace("gongfa-", ""))} · ${esc(e.version)}</span>
+            <span class="pill ${e.missing.length ? "warn" : "ok"}" title="声明缺口：${e.missing.join("、") || "无"}">${e.missing.length ? "缺 " + e.missing.length + " 项" : "字段完整"}</span>
+          </div>
+        </div>`;
+      }).join("");
+    },
+  });
+
+  /* ---- 文集 ---- */
+  const groups = {};
+  G.collections.forEach(c => { (groups[c.group] = groups[c.group] || []).push(c); });
+  $("#collections").innerHTML = Object.entries(groups).map(([g, list]) =>
+    `<div class="mb14">
+       <div class="row tight mb8">
+         <b style="font-size:.88rem">${esc(g)}</b>
+         <span class="pill">${list.length} 篇</span>
+       </div>
+       <div class="grid gauto">
+         ${list.map(c => `<div class="panel tight flat">
+            <div style="font-weight:600;font-size:.88rem">${esc(c.title)}</div>
+            <div class="tiny faint mt8" style="line-height:1.5">${esc(c.role || c.taxRole)}</div>
+            <div class="tiny mono-n mt8" style="color:var(--text-faint)">${esc(c.file)}</div>
+          </div>`).join("")}
+       </div>
+     </div>`).join("");
+
+  /* ---- 来源 ---- */
+  $("#sources").innerHTML =
+    `<thead><tr><th>来源 ID</th><th>修订</th><th>快照</th><th class="num">锚点</th></tr></thead><tbody>` +
+    G.sources.map(s => `<tr>
+      <td class="mono-n" style="font-size:.78rem">${esc(s.id.replace("repo-", ""))}</td>
+      <td class="mono-n tiny">${esc(s.revision)}</td>
+      <td class="tiny faint nowrap">${esc(s.captured)}</td>
+      <td class="num">${s.anchors}</td></tr>`).join("") + "</tbody>";
+
+  /* ---- 初评批次 ---- */
+  $("#proposals").innerHTML = G.proposals.map(p =>
+    `<div class="panel tight flat mb14">
+       <div class="row tight"><b class="mono-n" style="font-size:.82rem">${esc(p.id)}</b>
+         <span class="pill warn">${esc(p.status)}</span></div>
+       <div class="grid g2 mt8" style="gap:8px">
+         <div><div class="tiny faint">条目数</div><div class="mono-n" style="font-size:1.1rem">${p.count}</div></div>
+         <div><div class="tiny faint">依据</div><div class="small">${esc(p.basis)}</div></div>
+         <div><div class="tiny faint">评定者</div><div class="small">${esc((p.assessor || "").slice(0, 22))}</div></div>
+         <div><div class="tiny faint">时间</div><div class="small mono-n">${esc(p.at)}</div></div>
+       </div>
+       <div class="mt8">${Object.entries(p.gradeDist).sort((a, b) => b[1] - a[1]).map(([g, n]) =>
+         `<span class="tag ${g.split("-")[0]}" style="margin:2px 4px 0 0">${({advanced:"高",intermediate:"中",initial:"初"}[g.split("-")[1]]||"")}·${n}</span>`).join("")}</div>
+     </div>`).join("") +
+    `<div class="small muted">规约：<span class="term">${esc(G.policy.id)}@${esc(G.policy.version)}</span>
+      · 状态 <b style="color:var(--c-danger)">${esc(G.policy.status)}</b>
+      · 排序依据 ${esc((G.policy.ordering || []).join(" → "))}</div>`;
+})();
+</script>
+</body>
+</html>
